@@ -3,6 +3,7 @@
 #include "dispatch.h"
 #include "info.h"
 #include "interact/input.h"
+#include "utils/utils.h"
 
 #define MAX_LINE_LEN 1024
 #define MAX_ARGS_COUNT 16
@@ -28,7 +29,7 @@ int main() {
 		ret = fn(args_count, args);
 
 		if (ret != 0) {
-			Lwarn("Jobs exited with %d", ret);
+			Lwarn("Jobs exited with %d (%s)", ret, get_error_reason(ret));
 		}
 	}
 	return 0;

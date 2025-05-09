@@ -9,6 +9,7 @@ OBJS := main.o								\
 	interact/loglevel.o						\
 	job/dummy.o							\
 	job/quit.o							\
+	utils/error.o							\
 	utils/exit.o
 
 .all: build

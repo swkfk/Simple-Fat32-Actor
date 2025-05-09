@@ -14,4 +14,11 @@ DEFINE_JOB(quit);
 // Common includes
 #include "../interact/logger.h"
 
+// Error Codes
+enum {
+	E_Okay,
+	E_NoImgLoaded,
+	E_MAXN,
+};
+
 #endif
