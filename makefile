@@ -26,3 +26,4 @@ clean: tidy
 
 tidy:
 	-rm *.o
+	-rm **/*.o
