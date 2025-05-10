@@ -5,12 +5,18 @@
 #include "dispatch.h"
 
 job_t jobs[] = {
-    REGISTER_JOB(dummy), REGISTER_JOB(load), REGISTER_JOB(unload),
-    REGISTER_JOB(exit),	 REGISTER_JOB(quit),
+    REGISTER_JOB(help, "Show this help message"),
+    REGISTER_JOB(dummy, "Just a test job, print the <Arg...> arguments out"),
+    REGISTER_JOB(load, "Load the fat32 image from <Arg1> file"),
+    REGISTER_JOB(unload, "Unload the loaded image file"),
+    REGISTER_JOB(exit, "Exit the program"),
+    REGISTER_JOB(quit, "Exit the program"),
 };
 
+size_t job_count = sizeof(jobs) / sizeof(job_t);
+
 worker_fn_t find_job_worker(const char *words) {
-	for (int i = 0; i < sizeof(jobs) / sizeof(job_t); i++) {
+	for (int i = 0; i < job_count; i++) {
 		if (strcmp(words, jobs[i].job_name) == 0) {
 			return jobs[i].fn;
 		}

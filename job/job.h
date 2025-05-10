@@ -7,6 +7,8 @@
 // Exported Functions
 // dummy.c
 DEFINE_JOB(dummy);
+// help.c
+DEFINE_JOB(help);
 // load.c
 DEFINE_JOB(load);
 DEFINE_JOB(unload);

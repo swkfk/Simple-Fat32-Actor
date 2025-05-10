@@ -10,6 +10,7 @@ OBJS := main.o								\
 	interact/input.o						\
 	interact/loglevel.o						\
 	job/dummy.o							\
+	job/help.o							\
 	job/load.o							\
 	job/quit.o							\
 	utils/error.o							\
