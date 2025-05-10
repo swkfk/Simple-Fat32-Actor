@@ -9,6 +9,8 @@
 DEFINE_JOB(dummy);
 // help.c
 DEFINE_JOB(help);
+// info.c
+DEFINE_JOB(info);
 // load.c
 DEFINE_JOB(load);
 DEFINE_JOB(unload);
@@ -17,7 +19,9 @@ DEFINE_JOB(exit);
 DEFINE_JOB(quit);
 
 // Common includes
+#include "../fat32/img.h"
 #include "../interact/logger.h"
+#include "../utils/utils.h"
 
 // Error Codes
 enum {
@@ -28,5 +32,12 @@ enum {
 	E_FileReadError,
 	E_MAXN,
 };
+
+#define acquire_image_loaded()                                                                     \
+	do {                                                                                       \
+		if (img.fp == NULL) {                                                              \
+			return E_NoImgLoaded;                                                      \
+		}                                                                                  \
+	} while (0)
 
 #endif

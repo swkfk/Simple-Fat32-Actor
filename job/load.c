@@ -1,5 +1,3 @@
-#include "../fat32/img.h"
-#include "../utils/utils.h"
 #include "job.h"
 
 DEFINE_JOB(load) {

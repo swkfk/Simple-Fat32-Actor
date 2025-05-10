@@ -1,5 +1,4 @@
 #include "../dispatch.h"
-#include "../interact/logger.h"
 #include "job.h"
 
 extern job_t jobs[];

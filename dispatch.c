@@ -9,6 +9,7 @@ job_t jobs[] = {
     REGISTER_JOB(dummy, "Just a test job, print the <Arg...> arguments out"),
     REGISTER_JOB(load, "Load the fat32 image from <Arg1> file"),
     REGISTER_JOB(unload, "Unload the loaded image file"),
+    REGISTER_JOB(info, "Show the information of the loaded file"),
     REGISTER_JOB(exit, "Exit the program"),
     REGISTER_JOB(quit, "Exit the program"),
 };

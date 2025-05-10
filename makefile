@@ -7,10 +7,12 @@ OBJS := main.o								\
 	dispatch.o							\
 	fat32/global.o							\
 	fat32/img.o							\
+	fat32/location.o						\
 	interact/input.o						\
 	interact/loglevel.o						\
 	job/dummy.o							\
 	job/help.o							\
+	job/info.o							\
 	job/load.o							\
 	job/quit.o							\
 	utils/error.o							\

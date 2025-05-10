@@ -23,7 +23,7 @@ struct Fat32_Header {
 		ReservedField(16, SectorsPerTrack);
 		ReservedField(16, NumberOfHead);
 		ReservedField(32, HiddenSector);
-		Field(32, LargeSector);
+		Field(32, TotalSector); // Total Sector Count
 		Field(32, SectorsPerFAT);
 		Field(16, ExtendedFlag);
 		ReservedField(16, FileSystemVersion);
