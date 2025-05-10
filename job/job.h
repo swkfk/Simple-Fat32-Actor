@@ -7,6 +7,9 @@
 // Exported Functions
 // dummy.c
 DEFINE_JOB(dummy);
+// load.c
+DEFINE_JOB(load);
+DEFINE_JOB(unload);
 // quit.c
 DEFINE_JOB(exit);
 DEFINE_JOB(quit);
@@ -18,6 +21,9 @@ DEFINE_JOB(quit);
 enum {
 	E_Okay,
 	E_NoImgLoaded,
+	E_InvalidParam,
+	E_ImgFileNotFound,
+	E_FileReadError,
 	E_MAXN,
 };
 

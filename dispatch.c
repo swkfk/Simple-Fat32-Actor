@@ -5,9 +5,8 @@
 #include "dispatch.h"
 
 job_t jobs[] = {
-    REGISTER_JOB(dummy),
-    REGISTER_JOB(exit),
-    REGISTER_JOB(quit),
+    REGISTER_JOB(dummy), REGISTER_JOB(load), REGISTER_JOB(unload),
+    REGISTER_JOB(exit),	 REGISTER_JOB(quit),
 };
 
 worker_fn_t find_job_worker(const char *words) {
