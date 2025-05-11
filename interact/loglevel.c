@@ -2,8 +2,8 @@
 
 int _global_log_level = _L_Info;
 
-void change_log_level(int new_level) {
-	_global_log_level = new_level;
+void set_verbose() {
+	_global_log_level = _L_Trace;
 }
 
 const char _log_hints[] = {'E', 'W', 'I', 'T'};

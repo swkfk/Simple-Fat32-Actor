@@ -3,6 +3,7 @@
 
 #define JOB_FN_NAME(name) _job_##name
 #define DEFINE_JOB(name) int JOB_FN_NAME(name)(int argc, char **argv)
+#define CALL_JOB(name, argc, argv) JOB_FN_NAME(name)(argc, argv)
 
 // Exported Functions
 // dummy.c

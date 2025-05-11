@@ -17,7 +17,7 @@ extern int _global_log_level;
 extern const char _log_hints[];
 extern const int _log_colors[];
 
-void change_log_level(int new_level);
+void set_verbose();
 
 // Logger Core
 #define __logger(level, format, ...)                                                               \
