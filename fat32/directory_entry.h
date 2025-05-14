@@ -3,6 +3,15 @@
 
 #include "common.h"
 
+#define DIR_ATTR_READ_ONLY 0x01
+#define DIR_ATTR_HIDDEN 0x02
+#define DIR_ATTR_SYSTEM 0x04
+#define DIR_ATTR_VOLUME_ID 0x08
+#define DIR_ATTR_DIRECTORY 0x10
+#define DIR_ATTR_ARCHIVE 0x20
+#define DIR_ATTR_LONG_NAME                                                                         \
+	(DIR_ATTR_READ_ONLY | DIR_ATTR_HIDDEN | DIR_ATTR_SYSTEM | DIR_ATTR_VOLUME_ID)
+
 #pragma pack(1)
 struct Fat32_ShortDirectoryEntry {
 	ArrayField(8, BaseName);
@@ -38,5 +47,7 @@ struct Fat32_LongDirectoryEntry {
 	ArrayField(4, Unicode_3);
 };
 #pragma pack()
+
+typedef uint8_t(long_name_entry_t)[26];
 
 #endif

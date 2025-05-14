@@ -20,6 +20,7 @@ DEFINE_JOB(exit);
 DEFINE_JOB(quit);
 // debug/fat.c
 DEFINE_JOB(read_data);
+DEFINE_JOB(read_directory);
 
 // Common includes
 #include "../fat32/img.h"

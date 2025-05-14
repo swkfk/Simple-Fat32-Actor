@@ -21,6 +21,7 @@ OBJS := main.o								\
 	utils/error.o							\
 	utils/exit.o							\
 	utils/file.o							\
+	utils/string.o							\
 	utils/memory.o
 
 .all: build

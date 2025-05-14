@@ -15,6 +15,7 @@ job_t jobs[] = {
     REGISTER_JOB_ALIAS(.fat.read, read_data,
 		       "Read data from the <Arg1>-th cluster. The bytes read will be limited to "
 		       "<Arg2> if it is set"),
+    REGISTER_JOB_ALIAS(.fat.ls, read_directory, "Read the directory from the <Arg1>-th cluster"),
 };
 
 size_t job_count = sizeof(jobs) / sizeof(job_t);

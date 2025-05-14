@@ -14,4 +14,8 @@ fat_entry_t fat_next_cluster(fat_entry_t this_cluster);
 	for (fat_entry_t var = start_cluster_number; fat_is_valid_cluster(var);                    \
 	     var = fat_next_cluster(var))
 
+#define FOR_DIRECTORY_ENTRY(var, data, data_size)                                                  \
+	for (void *var = data; var < ((void *)data + data_size);                                   \
+	     var += sizeof(struct Fat32_ShortDirectoryEntry))
+
 #endif
