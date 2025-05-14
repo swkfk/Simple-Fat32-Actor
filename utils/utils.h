@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "macros.h"
+
 // exit.c
 __attribute__((noreturn)) void exit_program(int, int);
 

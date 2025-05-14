@@ -18,6 +18,8 @@ DEFINE_JOB(unload);
 // quit.c
 DEFINE_JOB(exit);
 DEFINE_JOB(quit);
+// debug/fat.c
+DEFINE_JOB(read_data);
 
 // Common includes
 #include "../fat32/img.h"

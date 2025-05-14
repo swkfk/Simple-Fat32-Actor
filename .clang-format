@@ -6,3 +6,5 @@ BreakBeforeBraces: Attach
 AllowShortFunctionsOnASingleLine: None
 IndentCaseLabels: false
 InsertBraces: true
+ForEachMacros:
+  - 'FOR_FAT_ENTRY_CHAIN'

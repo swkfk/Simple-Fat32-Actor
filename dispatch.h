@@ -15,6 +15,10 @@ typedef struct {
 	(job_t) {                                                                                  \
 		.job_name = #_name, .fn = JOB_FN_NAME(_name), .help_string = _help                 \
 	}
+#define REGISTER_JOB_ALIAS(_alias, _name, _help)                                                   \
+	(job_t) {                                                                                  \
+		.job_name = #_alias, .fn = JOB_FN_NAME(_name), .help_string = _help                \
+	}
 
 worker_fn_t find_job_worker(const char *);
 

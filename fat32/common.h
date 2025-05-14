@@ -8,4 +8,12 @@
 #define ReservedField(bits, name) uint##bits##_t _##name
 #define ReservedArrayField(bytes, name) uint8_t _##name[bytes];
 
+#define FAT_ENTRY_VALID_LOW 0x00000002
+#define FAT_ENTRY_VALID_HIGH (0x0FFFFFFE + 1)
+#define FAT_ENTRY_TERMINATE_LOW 0x0FFFFFF8
+#define FAT_ENTRY_TERMINATE_HIGH 0x0FFFFFFF + 1
+#define FAT_ENTRY_BAD 0xFFFFFFF7
+
+typedef uint32_t fat_entry_t;
+
 #endif
