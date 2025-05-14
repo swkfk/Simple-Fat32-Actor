@@ -52,6 +52,9 @@ static fat_entry_t read_fat_content(fat_entry_t cluster) {
 }
 
 bool fat_is_valid_cluster(fat_entry_t this_cluster) {
+	if (!IN_RANGE(this_cluster, FAT_ENTRY_VALID)) {
+		return false;
+	}
 	fat_entry_t this_content = read_fat_content(this_cluster);
 	return IN_RANGE(this_content, FAT_ENTRY_VALID) ||
 	       IN_RANGE(this_content, FAT_ENTRY_TERMINATE);
