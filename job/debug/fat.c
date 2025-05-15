@@ -102,6 +102,11 @@ DEFINE_JOB(read_directory) {
 		read_cluster_content(cluster, cluster_data);
 
 		FOR_DIRECTORY_ENTRY(dir, cluster_data, cluster_size) {
+
+			if (((unsigned char *) dir)[0] == 0xE5) {
+				continue;
+			}
+
 			struct Fat32_ShortDirectoryEntry *sdir = dir;
 			struct Fat32_LongDirectoryEntry *ldir = dir;
 
