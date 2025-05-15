@@ -22,5 +22,6 @@ void *checked_malloc(size_t elem_size, size_t count);
 // string.c
 void strip_trailing(char *str, const char ch, size_t length);
 void unicode2char(uint8_t *dest, uint16_t *src, size_t length);
+void concat_short_name(char *dest, const char *basename, const char *extname);
 
 #endif

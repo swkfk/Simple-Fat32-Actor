@@ -12,6 +12,11 @@
 #define DIR_ATTR_LONG_NAME                                                                         \
 	(DIR_ATTR_READ_ONLY | DIR_ATTR_HIDDEN | DIR_ATTR_SYSTEM | DIR_ATTR_VOLUME_ID)
 
+#define DIR_ENTRY_IS_FILE(dir) (!(((dir)->Attribute) & DIR_ATTR_DIRECTORY))
+#define DIR_ENTRY_IS_DIR(dir) (!(DIR_ENTRY_IS_FILE(dir)))
+#define DIR_ENTRY_IS_READONLY(dir) (!!(((dir)->Attribute) & DIR_ATTR_READ_ONLY))
+#define DIR_ENTRY_IS_HIDDEN(dir) (!!(((dir)->Attribute) & DIR_ATTR_HIDDEN))
+
 #pragma pack(1)
 struct Fat32_ShortDirectoryEntry {
 	ArrayField(8, BaseName);

@@ -12,5 +12,7 @@ typedef bool(directory_walk_callback_t)(struct Fat32_ShortDirectoryEntry *dir,
 
 void walk_directory_on_fat(struct Fat32_Image *img, int start_cluster,
 			   directory_walk_callback_t cb);
+fat_entry_t search_directory_on_fat(struct Fat32_Image *img, int start_cluster,
+				    const char *filename, struct Fat32_ShortDirectoryEntry *entry);
 
 #endif

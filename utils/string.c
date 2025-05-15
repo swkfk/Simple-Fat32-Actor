@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 void strip_trailing(char *str, const char ch, size_t length) {
 	for (size_t i = length - 1; i >= 0 && str[i] == ch; i--) {
@@ -12,4 +13,12 @@ void unicode2char(uint8_t *dest, uint16_t *src, size_t length) {
 		dest[i] = src[i] & 0xFF;
 	}
 	dest[length] = '\0';
+}
+
+void concat_short_name(char *dest, const char *basename, const char *extname) {
+	strcpy(dest, basename);
+	if (extname[0] != '\0') {
+		strcat(dest, ".");
+		strcat(dest, extname);
+	}
 }

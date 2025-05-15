@@ -20,6 +20,7 @@ static void copy_into_buffer(long_name_entry_t *buffer, struct Fat32_LongDirecto
 
 static void copy_into_string(char *dest, long_name_entry_t *src, size_t count) {
 	size_t len = 0;
+	dest[0] = '\0';
 	while (count--) {
 		unicode2char((uint8_t *)dest + len, (uint16_t *)(src + count),
 			     sizeof(long_name_entry_t) / 2);
@@ -87,4 +88,54 @@ out:
 	free(cluster_data);
 	free(filename_buffer);
 	free(filename);
+}
+
+static fat_entry_t _now_searched_cluster;
+static struct Fat32_ShortDirectoryEntry _now_searched_entry;
+static const char *_now_target_name;
+
+static bool search_directory_callback(struct Fat32_ShortDirectoryEntry *dir,
+				      const char *short_basename, const char *short_extname,
+				      const char *longname) {
+	if (longname[0] != '\0') {
+		// Just compare the long name
+		if (!strcmp(longname, _now_target_name)) {
+			goto found;
+		} else {
+			goto not_found;
+		}
+	} else {
+		// TODO: Check the FAT spec to find whether there is need to consider all the
+		// situations!
+
+		// Build the short name, and compare it!
+		char short_name[13];
+		concat_short_name(short_name, short_basename, short_extname);
+		if (!strcmp(short_name, _now_target_name)) {
+			goto found;
+		} else {
+			goto not_found;
+		}
+	}
+
+found:
+	_now_searched_cluster = JOIN_NUMBER(32, dir->StartCluster_hi, dir->StartCluster_lo);
+	_now_searched_entry = *dir;
+	return true;
+
+not_found:
+	return false;
+}
+
+fat_entry_t search_directory_on_fat(struct Fat32_Image *img, int start_cluster,
+				    const char *filename, struct Fat32_ShortDirectoryEntry *entry) {
+	_now_target_name = filename;
+	_now_searched_cluster = 0;
+
+	walk_directory_on_fat(img, start_cluster, search_directory_callback);
+
+	if (entry && _now_searched_cluster) {
+		*entry = _now_searched_entry;
+	}
+	return _now_searched_cluster;
 }

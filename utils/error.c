@@ -6,6 +6,8 @@ const char *error_reasons[E_MAXN] = {
     [E_InvalidParam] = "Arguments error or invalid",
     [E_ImgFileNotFound] = "Cannot find or open the image file",
     [E_FileReadError] = "Cannot read the image contents, or the image ended too early",
+    [E_FileOrDirectoryNotFound] = "File or directory not found in the image file",
+    [E_ThisIsAFile] = "This is a file instead of a directory",
 };
 
 const char *get_error_reason(int errorn) {

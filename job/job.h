@@ -15,6 +15,8 @@ DEFINE_JOB(info);
 // load.c
 DEFINE_JOB(load);
 DEFINE_JOB(unload);
+// ls.c
+DEFINE_JOB(ls);
 // quit.c
 DEFINE_JOB(exit);
 // debug/fat.c
@@ -33,6 +35,8 @@ enum {
 	E_InvalidParam,
 	E_ImgFileNotFound,
 	E_FileReadError,
+	E_FileOrDirectoryNotFound,
+	E_ThisIsAFile,
 	E_MAXN,
 };
 
