@@ -11,7 +11,7 @@ job_t jobs[] = {
     REGISTER_JOB(unload, "Unload the loaded image file"),
     REGISTER_JOB(info, "Show the information of the loaded file"),
     REGISTER_JOB(exit, "Exit the program"),
-    REGISTER_JOB(quit, "Exit the program"),
+    REGISTER_JOB_ALIAS(quit, exit, "Exit the program"),
     REGISTER_JOB_ALIAS(.fat.read, read_data,
 		       "Read data from the <Arg1>-th cluster. The bytes read will be limited to "
 		       "<Arg2> if it is set"),
