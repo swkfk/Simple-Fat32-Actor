@@ -6,6 +6,7 @@ LDFLAGS :=
 OBJS := main.o								\
 	dispatch.o							\
 	fat32/data_reader.o						\
+	fat32/datetime.o						\
 	fat32/fat_reader.o						\
 	fat32/global.o							\
 	fat32/img.o							\

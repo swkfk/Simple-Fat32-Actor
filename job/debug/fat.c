@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "../../fat32/data_reader.h"
+#include "../../fat32/datetime.h"
 #include "../../fat32/directory_entry.h"
 #include "../../fat32/fat_reader.h"
 #include "../job.h"
@@ -103,7 +104,7 @@ DEFINE_JOB(read_directory) {
 
 		FOR_DIRECTORY_ENTRY(dir, cluster_data, cluster_size) {
 
-			if (((unsigned char *) dir)[0] == 0xE5) {
+			if (((unsigned char *)dir)[0] == 0xE5) {
 				continue;
 			}
 
@@ -148,6 +149,17 @@ DEFINE_JOB(read_directory) {
 				print_bool("Is Read Only", sdir->Attribute & DIR_ATTR_READ_ONLY);
 				print_bool("Is Hidden", sdir->Attribute & DIR_ATTR_HIDDEN);
 				print_bool("Is Directory", sdir->Attribute & DIR_ATTR_DIRECTORY);
+
+				char time_string[25];
+				struct Fat32_Datetime create_time = parse_datetime(
+				    sdir->CreateDate, sdir->CreateTime, sdir->CreateTime_10ms);
+				datetime_string(time_string, &create_time);
+				print_kv("Create At", "%s", time_string);
+
+				struct Fat32_Datetime modify_time =
+				    parse_datetime(sdir->ModifyDate, sdir->ModifyTime, 0);
+				datetime_string(time_string, &modify_time);
+				print_kv("Modify At", "%s", time_string);
 			}
 		}
 	}
