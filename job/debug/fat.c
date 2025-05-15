@@ -4,6 +4,7 @@
 #include "../../fat32/data_reader.h"
 #include "../../fat32/datetime.h"
 #include "../../fat32/directory_entry.h"
+#include "../../fat32/directory_walk.h"
 #include "../../fat32/fat_reader.h"
 #include "../job.h"
 
@@ -63,108 +64,40 @@ out:
 	return 0;
 }
 
-static void copy_into_buffer(long_name_entry_t *buffer, struct Fat32_LongDirectoryEntry *dir) {
-	void *dest = buffer;
-	memcpy(dest, dir->Unicode_1, sizeof(dir->Unicode_1));
-	dest += sizeof(dir->Unicode_1);
-	memcpy(dest, dir->Unicode_2, sizeof(dir->Unicode_2));
-	dest += sizeof(dir->Unicode_2);
-	memcpy(dest, dir->Unicode_3, sizeof(dir->Unicode_3));
-}
-
-static void copy_into_string(char *dest, long_name_entry_t *src, size_t count) {
-	size_t len = 0;
-	while (count--) {
-		unicode2char((uint8_t *)dest + len, (uint16_t *)(src + count),
-			     sizeof(long_name_entry_t) / 2);
-		len += sizeof(long_name_entry_t) / 2;
+static bool display_entry_info(struct Fat32_ShortDirectoryEntry *dir, const char *short_basename,
+			       const char *short_extname, const char *longname) {
+	display("--> %8s.%3s <--\n", short_basename, short_extname);
+	if (longname[0]) {
+		print_kv("Long Name", "%s", longname);
 	}
+	if (!(dir->Attribute & DIR_ATTR_DIRECTORY)) {
+		print_kv("File Size", "%d", dir->FileLength);
+	}
+	print_kv("Start Cluster", "%d",
+		 JOIN_NUMBER(32, dir->StartCluster_hi, dir->StartCluster_lo));
+	print_bool("Is Read Only", dir->Attribute & DIR_ATTR_READ_ONLY);
+	print_bool("Is Hidden", dir->Attribute & DIR_ATTR_HIDDEN);
+	print_bool("Is Directory", dir->Attribute & DIR_ATTR_DIRECTORY);
+
+	char time_string[25];
+	struct Fat32_Datetime create_time =
+	    parse_datetime(dir->CreateDate, dir->CreateTime, dir->CreateTime_10ms);
+	datetime_string(time_string, &create_time);
+	print_kv("Create At", "%s", time_string);
+
+	struct Fat32_Datetime modify_time = parse_datetime(dir->ModifyDate, dir->ModifyTime, 0);
+	datetime_string(time_string, &modify_time);
+	print_kv("Modify At", "%s", time_string);
+
+	return false;
 }
 
 DEFINE_JOB(read_directory) {
-	if (argc != 2 && argc != 3) {
+	if (argc != 2) {
 		return E_InvalidParam;
 	}
 
-	int start_cluster = atoi(argv[1]);
-	const size_t cluster_size = img.header->BytesPerSector * img.header->SectorsPerCluster;
-	void *cluster_data =
-	    checked_malloc(img.header->BytesPerSector, img.header->SectorsPerCluster);
-
-	long_name_entry_t *filename_buffer =
-	    checked_malloc(sizeof(long_name_entry_t), MAX_FILENAME_ENTRY_COUNT);
-	char *filename =
-	    checked_malloc(1, sizeof(long_name_entry_t) * MAX_FILENAME_ENTRY_COUNT / 2);
-
-	size_t pos = 0;
-	bool warned_too_long = false;
-
-	FOR_FAT_ENTRY_CHAIN (cluster, start_cluster) {
-		read_cluster_content(cluster, cluster_data);
-
-		FOR_DIRECTORY_ENTRY(dir, cluster_data, cluster_size) {
-
-			if (((unsigned char *)dir)[0] == 0xE5) {
-				continue;
-			}
-
-			struct Fat32_ShortDirectoryEntry *sdir = dir;
-			struct Fat32_LongDirectoryEntry *ldir = dir;
-
-			uint8_t attr = sdir->Attribute;
-			if (attr == DIR_ATTR_LONG_NAME) {
-				if (pos == MAX_FILENAME_ENTRY_COUNT) {
-					if (!warned_too_long) {
-						copy_into_string(filename, filename_buffer, pos);
-						Lwarn("filename too long: %s", filename);
-						warned_too_long = true;
-					}
-				} else {
-					copy_into_buffer(filename_buffer + pos, ldir);
-					pos++;
-				}
-			} else {
-				char base_name[9], ext_name[4];
-				memcpy(base_name, sdir->BaseName, 8);
-				memcpy(ext_name, sdir->ExtName, 3);
-				strip_trailing(base_name, ' ', 8);
-				strip_trailing(ext_name, ' ', 3);
-
-				// Handle the long file name
-				copy_into_string(filename, filename_buffer, pos);
-				pos = 0;
-				warned_too_long = false;
-
-				// Display informations
-				display("--> %8s.%3s <--\n", base_name, ext_name);
-				if (((char *)filename_buffer)[0]) {
-					print_kv("Long Name", "%s", filename);
-				}
-				if (!(sdir->Attribute & DIR_ATTR_DIRECTORY)) {
-					print_kv("File Size", "%d", sdir->FileLength);
-				}
-				print_kv(
-				    "Start Cluster", "%d",
-				    JOIN_NUMBER(32, sdir->StartCluster_hi, sdir->StartCluster_lo));
-				print_bool("Is Read Only", sdir->Attribute & DIR_ATTR_READ_ONLY);
-				print_bool("Is Hidden", sdir->Attribute & DIR_ATTR_HIDDEN);
-				print_bool("Is Directory", sdir->Attribute & DIR_ATTR_DIRECTORY);
-
-				char time_string[25];
-				struct Fat32_Datetime create_time = parse_datetime(
-				    sdir->CreateDate, sdir->CreateTime, sdir->CreateTime_10ms);
-				datetime_string(time_string, &create_time);
-				print_kv("Create At", "%s", time_string);
-
-				struct Fat32_Datetime modify_time =
-				    parse_datetime(sdir->ModifyDate, sdir->ModifyTime, 0);
-				datetime_string(time_string, &modify_time);
-				print_kv("Modify At", "%s", time_string);
-			}
-		}
-	}
-
-	free(cluster_data);
+	walk_directory_on_fat(&img, atoi(argv[1]), display_entry_info);
 
 	return 0;
 }
