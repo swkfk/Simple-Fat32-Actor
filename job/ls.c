@@ -70,6 +70,13 @@ DEFINE_JOB(ls) {
 	if (current != img.header->RootClusterNumber && DIR_ENTRY_IS_FILE(&entry)) {
 		display("[FILE] %s %d byte%s\n", argv[argc - 1], entry.FileLength,
 			entry.FileLength ? "s" : "");
+
+		char argv0[] = {""};
+		char argv1[20];
+		sprintf(argv1, "%d", current);
+		char *argv[] = {argv0, argv1};
+		CALL_JOB(read_data, 2, argv);
+
 	} else if (current != 0) {
 		walk_directory_on_fat(&img, current, display_entry_info);
 	} else {
