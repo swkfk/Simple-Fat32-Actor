@@ -52,11 +52,14 @@ DEFINE_JOB(ls) {
 	for (int i = 1; i < argc; i++) {
 		fat_entry_t searched_result =
 		    search_directory_on_fat(&img, current, argv[i], &entry);
-		if (!searched_result) {
+		if (-1 == searched_result) {
 			Lerror("No such file or directory '%s' in cluster %d", argv[i], current);
 			return E_FileOrDirectoryNotFound;
-		} else {
+		} else if (searched_result != 0) {
 			current = searched_result;
+		} else {
+			// TODO: Why?
+			current = img.header->RootClusterNumber;
 		}
 		if (i != argc - 1 && DIR_ENTRY_IS_FILE(&entry)) {
 			Lerror("'%s' is a file", argv[i]);
@@ -67,8 +70,11 @@ DEFINE_JOB(ls) {
 	if (current != img.header->RootClusterNumber && DIR_ENTRY_IS_FILE(&entry)) {
 		display("[FILE] %s %d byte%s\n", argv[argc - 1], entry.FileLength,
 			entry.FileLength ? "s" : "");
-	} else {
+	} else if (current != 0) {
 		walk_directory_on_fat(&img, current, display_entry_info);
+	} else {
+		// TODO: Why?
+		walk_directory_on_fat(&img, img.header->RootClusterNumber, display_entry_info);
 	}
 
 	return 0;

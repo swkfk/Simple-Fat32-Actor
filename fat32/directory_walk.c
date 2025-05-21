@@ -97,6 +97,8 @@ static const char *_now_target_name;
 static bool search_directory_callback(struct Fat32_ShortDirectoryEntry *dir,
 				      const char *short_basename, const char *short_extname,
 				      const char *longname) {
+	Ltrace("Search Directory: _now_target_name: '%s', short_name: '%s', '%s', long_name: '%s'",
+	       _now_target_name, short_basename, short_extname, longname);
 	if (longname[0] != '\0') {
 		// Just compare the long name
 		if (!strcmp(longname, _now_target_name)) {
@@ -111,6 +113,8 @@ static bool search_directory_callback(struct Fat32_ShortDirectoryEntry *dir,
 		// Build the short name, and compare it!
 		char short_name[13];
 		concat_short_name(short_name, short_basename, short_extname);
+		Ltrace("Concated string: '%s' + '%s' ==> '%s'", short_basename, short_extname,
+		       short_name);
 		if (!strcmp(short_name, _now_target_name)) {
 			goto found;
 		} else {
@@ -120,6 +124,7 @@ static bool search_directory_callback(struct Fat32_ShortDirectoryEntry *dir,
 
 found:
 	_now_searched_cluster = JOIN_NUMBER(32, dir->StartCluster_hi, dir->StartCluster_lo);
+	Ltrace("Set _now_searched_cluster = %d", _now_searched_cluster);
 	_now_searched_entry = *dir;
 	return true;
 
@@ -130,7 +135,7 @@ not_found:
 fat_entry_t search_directory_on_fat(struct Fat32_Image *img, int start_cluster,
 				    const char *filename, struct Fat32_ShortDirectoryEntry *entry) {
 	_now_target_name = filename;
-	_now_searched_cluster = 0;
+	_now_searched_cluster = -1;
 
 	walk_directory_on_fat(img, start_cluster, search_directory_callback);
 
