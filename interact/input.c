@@ -49,7 +49,11 @@ int parse_command_line(char *input_str, char *argv[], size_t args_maxn) {
 }
 
 char *line_interact(char *response, size_t maxn) {
-	printf(">>> ");
+	printf("\033[34m>>> ");
 	fflush(stdout);
-	return fgets(response, maxn, stdin);
+	char *ret = fgets(response, maxn, stdin);
+	printf("\033[0m");
+	fflush(stdout);
+
+	return ret;
 }
