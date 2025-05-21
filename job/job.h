@@ -37,6 +37,8 @@ enum {
 	E_FileReadError,
 	E_FileOrDirectoryNotFound,
 	E_ThisIsAFile,
+	E_FileOrDirectoryExists,
+	E_NoSpace,
 	E_MAXN,
 };
 

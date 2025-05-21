@@ -8,6 +8,8 @@ const char *error_reasons[E_MAXN] = {
     [E_FileReadError] = "Cannot read the image contents, or the image ended too early",
     [E_FileOrDirectoryNotFound] = "File or directory not found in the image file",
     [E_ThisIsAFile] = "This is a file instead of a directory",
+    [E_FileOrDirectoryExists] = "File or directory is already exist",
+    [E_NoSpace] = "There is no enough space for the image file",
 };
 
 const char *get_error_reason(int errorn) {
