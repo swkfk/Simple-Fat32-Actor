@@ -12,6 +12,7 @@ int parse_command_line(char *input_str, char *argv[], size_t args_maxn) {
 
 	if (input_str == NULL) {
 		// EOF Caught!
+		display("\n");
 		exit_program(0, 0);
 		return 0;
 	}
