@@ -8,6 +8,7 @@
 #include "directory_walk.h"
 #include "fat_reader.h"
 #include "img.h"
+#include "location.h"
 
 static void copy_into_buffer(long_name_entry_t *buffer, struct Fat32_LongDirectoryEntry *dir) {
 	void *dest = buffer;
@@ -65,21 +66,23 @@ void walk_directory_on_fat(struct Fat32_Image *img, int start_cluster,
 					copy_into_buffer(filename_buffer + pos, ldir);
 					pos++;
 				}
-			} else {
-				char base_name[9], ext_name[4];
-				memcpy(base_name, sdir->BaseName, 8);
-				memcpy(ext_name, sdir->ExtName, 3);
-				strip_trailing(base_name, ' ', 8);
-				strip_trailing(ext_name, ' ', 3);
+				continue;
+			}
 
-				// Handle the long file name
-				copy_into_string(filename, filename_buffer, pos);
-				pos = 0;
-				warned_too_long = false;
+			char base_name[9], ext_name[4];
+			memcpy(base_name, sdir->BaseName, 8);
+			memcpy(ext_name, sdir->ExtName, 3);
+			strip_trailing(base_name, ' ', 8);
+			strip_trailing(ext_name, ' ', 3);
 
-				if (cb(sdir, base_name, ext_name, filename)) {
-					goto out;
-				}
+			// Handle the long file name
+			copy_into_string(filename, filename_buffer, pos);
+			pos = 0;
+			warned_too_long = false;
+
+			if (cb(sdir, loc_data_bytes_by_cluster(img, cluster) + (dir - cluster_data),
+			       base_name, ext_name, filename)) {
+				goto out;
 			}
 		}
 	}
@@ -94,9 +97,7 @@ static fat_entry_t _now_searched_cluster;
 static struct Fat32_ShortDirectoryEntry _now_searched_entry;
 static const char *_now_target_name;
 
-static bool search_directory_callback(struct Fat32_ShortDirectoryEntry *dir,
-				      const char *short_basename, const char *short_extname,
-				      const char *longname) {
+DefDirWalkCb(search_directory_callback) {
 	Ltrace("Search Directory: _now_target_name: '%s', short_name: '%s', '%s', long_name: '%s'",
 	       _now_target_name, short_basename, short_extname, longname);
 	if (longname[0] != '\0') {

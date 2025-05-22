@@ -21,3 +21,7 @@ int loc_data_start_sector(struct Fat32_Image *img) {
 int loc_data_sector_by_cluster(struct Fat32_Image *img, int cluster_no) {
 	return loc_data_start_sector(img) + (cluster_no - 2) * img->header->SectorsPerCluster;
 }
+
+int loc_data_bytes_by_cluster(struct Fat32_Image *img, int cluster_no) {
+	return loc_data_sector_by_cluster(img, cluster_no) * img->header->BytesPerSector;
+}

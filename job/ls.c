@@ -3,8 +3,7 @@
 #include "../fat32/datetime.h"
 #include "../fat32/directory_walk.h"
 
-static bool display_entry_info(struct Fat32_ShortDirectoryEntry *dir, const char *short_basename,
-			       const char *short_extname, const char *longname) {
+DefDirWalkCb(display_entry_info) {
 	// File name
 	if (longname[0]) {
 		display("%40s ", longname);
@@ -20,6 +19,9 @@ static bool display_entry_info(struct Fat32_ShortDirectoryEntry *dir, const char
 	} else {
 		display("%8s ", "DIR");
 	}
+
+	// Directory entry offset
+	display("\033[2;36m %8zx \033[0m", dir_offset);
 
 	struct Fat32_Datetime dt;
 	char dt_string[25];

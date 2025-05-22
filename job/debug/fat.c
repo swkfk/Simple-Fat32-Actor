@@ -64,8 +64,7 @@ out:
 	return 0;
 }
 
-static bool display_entry_info(struct Fat32_ShortDirectoryEntry *dir, const char *short_basename,
-			       const char *short_extname, const char *longname) {
+DefDirWalkCb(display_entry_info) {
 	display("--> %8s.%3s <--\n", short_basename, short_extname);
 	if (longname[0]) {
 		print_kv("Long Name", "%s", longname);
