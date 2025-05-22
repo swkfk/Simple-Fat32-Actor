@@ -1,6 +1,7 @@
 #include <string.h>
 
 #include "../interact/logger.h"
+#include "../job/job.h"
 #include "../utils/utils.h"
 #include "common.h"
 #include "data_reader.h"
@@ -20,7 +21,7 @@ static size_t copy_into_buffer(void *buffer, struct Fat32_LongDirectoryEntry *di
 	return dest - buffer;
 }
 
-void dump_last_dir(struct Array *dirs, struct Fat32_ShortDirectoryEntry **out) {
+void dump_last_dir(DirectoryEntries dirs, struct Fat32_ShortDirectoryEntry **out) {
 	struct Fat32_ShortDirectoryEntry *sdir = array_get_elem(dirs, -1);
 	if (!sdir) {
 		Lwarn("Unexpected emprt dirs!");
@@ -30,7 +31,7 @@ void dump_last_dir(struct Array *dirs, struct Fat32_ShortDirectoryEntry **out) {
 	}
 }
 
-void dump_short_name(struct Array *dirs, char *basename, char *extname) {
+void dump_short_name(DirectoryEntries dirs, char *basename, char *extname) {
 	struct Fat32_ShortDirectoryEntry *sdir;
 	dump_last_dir(dirs, &sdir);
 
@@ -44,7 +45,7 @@ void dump_short_name(struct Array *dirs, char *basename, char *extname) {
 	strip_trailing(extname, ' ', 3);
 }
 
-void dump_long_name(struct Array *dirs, char *longname) {
+void dump_long_name(DirectoryEntries dirs, char *longname) {
 	char buffer[MAX_FILENAME_LENGTH * 2] = {};
 	size_t offset = 0;
 	for (int i = dirs->position - 2; i >= 0; i--) {
@@ -59,7 +60,7 @@ void walk_directory_on_fat(struct Fat32_Image *img, int start_cluster,
 	void *cluster_data =
 	    checked_malloc(img->header->BytesPerSector, img->header->SectorsPerCluster);
 
-	struct Array *dirs = alloc_array(sizeof(struct DirectoryEntryWithOffset), 1);
+	DirectoryEntries dirs = alloc_array(sizeof(struct DirectoryEntryWithOffset), 1);
 
 	FOR_FAT_ENTRY_CHAIN (cluster, start_cluster) {
 		read_cluster_content(cluster, cluster_data);
@@ -95,13 +96,10 @@ out:
 	array_free(&dirs);
 }
 
-static fat_entry_t _now_searched_cluster;
-static struct Fat32_ShortDirectoryEntry _now_searched_entry;
+static DirectoryEntries _now_searched_entries;
 static const char *_now_target_name;
 
 DefDirWalkCb(search_directory_callback) {
-	bool end = false;
-
 	char short_basename[9], short_extname[4], longname[MAX_FILENAME_LENGTH];
 	struct Fat32_ShortDirectoryEntry *dir;
 
@@ -135,30 +133,66 @@ DefDirWalkCb(search_directory_callback) {
 	}
 
 found:
-	_now_searched_cluster = JOIN_NUMBER(32, dir->StartCluster_hi, dir->StartCluster_lo);
-	Ltrace("Set _now_searched_cluster = %d", _now_searched_cluster);
-	_now_searched_entry = *dir;
-	end = true;
-	goto out;
+	_now_searched_entries = dirs;
+	Ltrace("Set _now_searched_cluster = %d",
+	       JOIN_NUMBER(32, dir->StartCluster_hi, dir->StartCluster_lo));
+	return true;
 
 not_found:
-	end = false;
-	goto out;
-
-out:
 	array_free(&dirs);
-	return end;
+	return false;
 }
 
-fat_entry_t search_directory_on_fat(struct Fat32_Image *img, int start_cluster,
-				    const char *filename, struct Fat32_ShortDirectoryEntry *entry) {
-	_now_target_name = filename;
-	_now_searched_cluster = -1;
+int search_path(struct Fat32_Image *img, const char **pathes, int count, DirectoryEntries *out_dirs,
+		fat_entry_t *out_start_cluster) {
+	fat_entry_t current_start_cluster = img->header->RootClusterNumber;
+	for (int i = 0; i < count; i++) {
+		_now_target_name = pathes[i];
+		_now_searched_entries = NULL;
+		walk_directory_on_fat(img, current_start_cluster, search_directory_callback);
 
-	walk_directory_on_fat(img, start_cluster, search_directory_callback);
+		if (!_now_searched_entries) {
+			return E_FileOrDirectoryNotFound;
+		}
 
-	if (entry && _now_searched_cluster) {
-		*entry = _now_searched_entry;
+		struct DirectoryEntryWithOffset *dir = array_get_elem(_now_searched_entries, -1);
+		if (!dir) {
+			return E_InvalidParam;
+		}
+
+		current_start_cluster =
+		    JOIN_NUMBER(32, dir->entry.StartCluster_hi, dir->entry.StartCluster_lo);
+
+		if (DIR_ENTRY_IS_DIR(&dir->entry)) {
+			if (current_start_cluster == 0) {
+				// TODO: Check it in the FAT spec!
+				current_start_cluster = img->header->RootClusterNumber;
+			}
+		} else {
+			// A file, must be the last entry!
+			if (i != count - 1) {
+				Lerror("'%s' is a file", _now_target_name);
+				array_free(&_now_searched_entries);
+				return E_ThisIsAFile;
+			}
+		}
+
+		// Only the last one will not be freed here
+		if (i != count - 1) {
+			array_free(&_now_searched_entries);
+		}
 	}
-	return _now_searched_cluster;
+
+	if (out_start_cluster) {
+		*out_start_cluster = current_start_cluster;
+	}
+
+	if (out_dirs) {
+		*out_dirs = _now_searched_entries;
+		_now_searched_entries = NULL;
+	} else {
+		array_free(&_now_searched_entries);
+	}
+
+	return 0;
 }

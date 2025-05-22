@@ -59,42 +59,37 @@ DefDirWalkCb(display_entry_info) {
 }
 
 DEFINE_JOB(ls) {
-	fat_entry_t current = img.header->RootClusterNumber;
-	struct Fat32_ShortDirectoryEntry entry;
+	fat_entry_t start_cluster = 0;
+	DirectoryEntries dirs = NULL;
+	struct Fat32_ShortDirectoryEntry *entry = NULL;
 
-	for (int i = 1; i < argc; i++) {
-		fat_entry_t searched_result =
-		    search_directory_on_fat(&img, current, argv[i], &entry);
-		if (-1 == searched_result) {
-			Lerror("No such file or directory '%s' in cluster %d", argv[i], current);
-			return E_FileOrDirectoryNotFound;
-		} else if (searched_result != 0) {
-			current = searched_result;
-		} else {
-			// TODO: Why?
-			current = img.header->RootClusterNumber;
-		}
-		if (i != argc - 1 && DIR_ENTRY_IS_FILE(&entry)) {
-			Lerror("'%s' is a file", argv[i]);
-			return E_ThisIsAFile;
-		}
+	int r = search_path(&img, (const char **)argv + 1, argc - 1, &dirs, &start_cluster);
+	if (r) {
+		return r;
 	}
 
-	if (current != img.header->RootClusterNumber && DIR_ENTRY_IS_FILE(&entry)) {
-		display("[FILE] %s %d byte%s\n", argv[argc - 1], entry.FileLength,
-			entry.FileLength ? "s" : "");
+	if (dirs) {
+		dump_last_dir(dirs, &entry);
+	}
 
+	if (start_cluster != img.header->RootClusterNumber && entry && DIR_ENTRY_IS_FILE(entry)) {
+		display("[FILE] %s %d byte%s\n", argv[argc - 1], entry->FileLength,
+			entry->FileLength ? "s" : "");
+
+		// Read the file content
 		char argv0[] = {""};
-		char argv1[20];
-		sprintf(argv1, "%d", current);
-		char *argv[] = {argv0, argv1};
-		CALL_JOB(read_data, 2, argv);
+		char argv1[20], argv2[20];
+		sprintf(argv1, "%d", start_cluster);
+		sprintf(argv2, "%d", entry->FileLength);
+		char *argv[] = {argv0, argv1, argv2};
+		CALL_JOB(read_data, 3, argv);
 
-	} else if (current != 0) {
-		walk_directory_on_fat(&img, current, display_entry_info);
 	} else {
-		// TODO: Why?
-		walk_directory_on_fat(&img, img.header->RootClusterNumber, display_entry_info);
+		walk_directory_on_fat(&img, start_cluster, display_entry_info);
+	}
+
+	if (dirs) {
+		array_free(&dirs);
 	}
 
 	return 0;

@@ -64,4 +64,6 @@ struct DirectoryEntryWithOffset {
 	size_t offset;
 };
 
+typedef struct Array *DirectoryEntries;
+
 #endif
