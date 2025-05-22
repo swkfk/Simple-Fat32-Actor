@@ -10,6 +10,8 @@ const char *error_reasons[E_MAXN] = {
     [E_ThisIsAFile] = "This is a file instead of a directory",
     [E_FileOrDirectoryExists] = "File or directory is already exist",
     [E_NoSpace] = "There is no enough space for the image file",
+    [E_PermissionDenied] = "You have no permision to do this",
+    [E_DirectoryNotEmpty] = "The target directory is not empty",
 };
 
 const char *get_error_reason(int errorn) {

@@ -39,6 +39,8 @@ enum {
 	E_ThisIsAFile,
 	E_FileOrDirectoryExists,
 	E_NoSpace,
+	E_PermissionDenied,
+	E_DirectoryNotEmpty,
 	E_MAXN,
 };
 
