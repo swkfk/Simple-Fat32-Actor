@@ -2,12 +2,19 @@
 
 #include "../interact/logger.h"
 
+static void pre_exit_operations() {
+	//
+}
+
 __attribute__((noreturn)) void exit_program(int exit_code, int pass_through) {
 	if (exit_code == 0) {
-		display("Bye!\n");
+		Linfo("Bye!\n");
 	} else {
 		Lerror("Exit with non-zero code %d", exit_code);
 	}
+
+	pre_exit_operations();
+
 	if (pass_through) {
 		exit(exit_code);
 	} else {

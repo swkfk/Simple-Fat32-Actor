@@ -18,6 +18,7 @@ extern const char _log_hints[];
 extern const int _log_colors[];
 
 void set_verbose();
+void set_quiet();
 
 // Logger Core
 #define __logger(level, format, ...)                                                               \
