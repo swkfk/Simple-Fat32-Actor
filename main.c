@@ -67,6 +67,8 @@ static void do_job_from_line(char *input) {
 }
 
 int main(int argc, char **argv) {
+	(void)init_start_time();
+
 	char inputs[MAX_LINE_LEN], *input_p;
 
 	int pre_exec_count = 0;

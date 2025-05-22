@@ -7,6 +7,7 @@ static void pre_exit_operations() {
 }
 
 __attribute__((noreturn)) void exit_program(int exit_code, int pass_through) {
+	display("\n");
 	if (exit_code == 0) {
 		Linfo("Bye!\n");
 	} else {

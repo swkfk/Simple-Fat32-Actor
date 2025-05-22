@@ -2,6 +2,7 @@
 #define _INTERACT_LOGGER_H_
 
 #include <stdio.h>
+#include <time.h>
 
 #define display printf
 
@@ -14,18 +15,30 @@ enum {
 };
 
 extern int _global_log_level;
-extern const char _log_hints[];
+extern const char *_log_hints[];
 extern const int _log_colors[];
 
 void set_verbose();
 void set_quiet();
 
+// Logger time support
+time_t init_start_time();
+time_t get_time_delta_us();
+
+extern unsigned long _log_index;
+
 // Logger Core
 #define __logger(level, format, ...)                                                               \
 	do {                                                                                       \
 		if (level <= _global_log_level) {                                                  \
-			printf("\033[%dm[%c] " format "\033[0m\n", _log_colors[level],             \
-			       _log_hints[level], ##__VA_ARGS__);                                  \
+			int pre_width;                                                             \
+			printf("\033[%dm[%9.2lf](%03ld) %5s <%s:%d %s>%n", _log_colors[level],     \
+			       get_time_delta_us() / 1000., ++_log_index, _log_hints[level],       \
+			       __FILE__, __LINE__, __FUNCTION__, &pre_width);                      \
+			for (; pre_width < 75; pre_width++) {                                      \
+				printf(" ");                                                       \
+			}                                                                          \
+			printf(format "\033[0m\n", ##__VA_ARGS__);                                 \
 		}                                                                                  \
 	} while (0)
 

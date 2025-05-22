@@ -13,6 +13,7 @@ OBJS := main.o								\
 	fat32/img.o							\
 	fat32/location.o						\
 	interact/input.o						\
+	interact/logtime.o						\
 	interact/loglevel.o						\
 	job/debug/fat.o							\
 	job/dummy.o							\
