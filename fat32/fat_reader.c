@@ -51,6 +51,10 @@ static fat_entry_t read_fat_content(fat_entry_t cluster) {
 	return _fat.cached_fat_entry[cluster - ROUND_DOWN(cluster, CACHE_FAT_NUMBER)];
 }
 
+void invalidate_fat() {
+	_fat.present = false;
+}
+
 bool fat_is_valid_cluster(fat_entry_t this_cluster) {
 	if (!IN_RANGE(this_cluster, FAT_ENTRY_VALID)) {
 		return false;

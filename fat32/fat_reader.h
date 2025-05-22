@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+void invalidate_fat();
 bool fat_is_valid_cluster(fat_entry_t this_cluster);
 bool fat_has_next_cluster(fat_entry_t this_cluster);
 fat_entry_t fat_next_cluster(fat_entry_t this_cluster);

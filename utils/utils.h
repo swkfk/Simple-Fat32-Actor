@@ -15,6 +15,7 @@ const char *get_error_reason(int);
 
 // file.c
 int read_file(FILE *fp, void *out, size_t start, size_t len);
+int write_file(FILE *fp, void *data, size_t start, size_t len);
 
 // memory.c
 void *checked_malloc(size_t elem_size, size_t count);

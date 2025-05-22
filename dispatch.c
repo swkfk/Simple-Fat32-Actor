@@ -11,6 +11,7 @@ job_t jobs[] = {
     REGISTER_JOB(unload, "Unload the loaded image file"),
     REGISTER_JOB(info, "Show the information of the loaded file"),
     REGISTER_JOB(ls, "Retrive the items in or contents of /<Arg1>/<Arg2>/...<Arg-last-one>"),
+    REGISTER_JOB(rm, "Remove the file or empty directory in /<Arg1>/<Arg2>/...<Arg-last-one>"),
     REGISTER_JOB(exit, "Exit the program"),
     REGISTER_JOB_ALIAS(quit, exit, "Exit the program"),
     REGISTER_JOB_ALIAS(.fat.read, read_data,

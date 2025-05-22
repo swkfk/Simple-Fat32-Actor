@@ -14,6 +14,11 @@ int loc_fat_entry_bytes(struct Fat32_Image *img, int cluster_no) {
 	       cluster_no * sizeof(fat_entry_t);
 }
 
+int loc_fat_nth_entry_bytes(struct Fat32_Image *img, int cluster_no, int fat_no) {
+	return loc_fat_start_sector(img, fat_no) * img->header->BytesPerSector +
+	       cluster_no * sizeof(fat_entry_t);
+}
+
 int loc_data_start_sector(struct Fat32_Image *img) {
 	return img->header->ReservedSector + img->header->NumberOfFAT * img->header->SectorsPerFAT;
 }

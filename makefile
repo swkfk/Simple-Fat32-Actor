@@ -9,6 +9,7 @@ OBJS := main.o								\
 	fat32/datetime.o						\
 	fat32/directory_walk.o						\
 	fat32/fat_reader.o						\
+	fat32/fat_write.o						\
 	fat32/global.o							\
 	fat32/img.o							\
 	fat32/location.o						\
@@ -22,6 +23,7 @@ OBJS := main.o								\
 	job/load.o							\
 	job/ls.o							\
 	job/quit.o							\
+	job/rm.o							\
 	utils/array.o							\
 	utils/error.o							\
 	utils/exit.o							\

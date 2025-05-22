@@ -19,6 +19,8 @@ DEFINE_JOB(unload);
 DEFINE_JOB(ls);
 // quit.c
 DEFINE_JOB(exit);
+// rm.c
+DEFINE_JOB(rm);
 // debug/fat.c
 DEFINE_JOB(read_data);
 DEFINE_JOB(read_directory);
