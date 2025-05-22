@@ -77,3 +77,22 @@ fat_entry_t fat_next_cluster(fat_entry_t this_cluster) {
 		return FAT_ENTRY_BAD;
 	}
 }
+
+fat_entry_t find_free_cluster() {
+	fat_entry_t now_free = img.fsinfo->NextEmptyClusterNumber;
+	size_t data_cluster_count =
+	    (img.header->TotalSector - loc_data_start_sector(&img)) / img.header->SectorsPerCluster;
+
+	for (fat_entry_t iter = now_free; iter < data_cluster_count; iter++) {
+		if (0 == read_fat_content(iter)) {
+			return iter;
+		}
+	}
+	for (fat_entry_t iter = 2; iter < now_free; iter++) {
+		if (0 == read_fat_content(iter)) {
+			return iter;
+		}
+	}
+
+	return 0; // OOM
+}

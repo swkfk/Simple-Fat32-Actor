@@ -21,6 +21,7 @@ DEFINE_JOB(ls);
 DEFINE_JOB(exit);
 // rm.c
 DEFINE_JOB(rm);
+DEFINE_JOB(truncate);
 // debug/fat.c
 DEFINE_JOB(read_data);
 DEFINE_JOB(read_directory);
