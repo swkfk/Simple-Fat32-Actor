@@ -64,7 +64,7 @@ void walk_directory_on_fat(struct Fat32_Image *img, int start_cluster,
 	FOR_FAT_ENTRY_CHAIN (cluster, start_cluster) {
 		read_cluster_content(cluster, cluster_data);
 
-		FOR_DIRECTORY_ENTRY(dir, cluster_data, cluster_size) {
+		FOR_DIRECTORY_ENTRY (dir, cluster_data, cluster_size) {
 
 			if (((unsigned char *)dir)[0] == 0xE5) {
 				continue;
