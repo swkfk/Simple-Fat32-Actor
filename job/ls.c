@@ -4,6 +4,13 @@
 #include "../fat32/directory_walk.h"
 
 DefDirWalkCb(display_entry_info) {
+	char short_basename[9], short_extname[4], longname[MAX_FILENAME_LENGTH];
+	struct Fat32_ShortDirectoryEntry *dir;
+
+	dump_short_name(dirs, short_basename, short_extname);
+	dump_long_name(dirs, longname);
+	dump_last_dir(dirs, &dir);
+
 	// File name
 	if (longname[0]) {
 		display("%40s ", longname);
@@ -19,9 +26,6 @@ DefDirWalkCb(display_entry_info) {
 	} else {
 		display("%8s ", "DIR");
 	}
-
-	// Directory entry offset
-	display("\033[2;36m %8zx \033[0m", dir_offset);
 
 	struct Fat32_Datetime dt;
 	char dt_string[25];
@@ -42,7 +46,14 @@ DefDirWalkCb(display_entry_info) {
 		display("%s ", "HIDDEN");
 	}
 
+	for (int i = 0; i < dirs->position; i++) {
+		struct DirectoryEntryWithOffset *dir = array_get_elem(dirs, i);
+		Dtrace(" %zx", dir->offset);
+	}
+
 	display("\n");
+
+	array_free(&dirs);
 
 	return false;
 }

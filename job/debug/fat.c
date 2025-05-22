@@ -65,6 +65,13 @@ out:
 }
 
 DefDirWalkCb(display_entry_info) {
+	char short_basename[9], short_extname[4], longname[MAX_FILENAME_LENGTH];
+	struct Fat32_ShortDirectoryEntry *dir;
+
+	dump_short_name(dirs, short_basename, short_extname);
+	dump_long_name(dirs, longname);
+	dump_last_dir(dirs, &dir);
+
 	display("--> %8s.%3s <--\n", short_basename, short_extname);
 	if (longname[0]) {
 		print_kv("Long Name", "%s", longname);
@@ -87,6 +94,8 @@ DefDirWalkCb(display_entry_info) {
 	struct Fat32_Datetime modify_time = parse_datetime(dir->ModifyDate, dir->ModifyTime, 0);
 	datetime_string(time_string, &modify_time);
 	print_kv("Modify At", "%s", time_string);
+
+	array_free(&dirs);
 
 	return false;
 }

@@ -3,6 +3,7 @@
 #include <string.h>
 
 void strip_trailing(char *str, const char ch, size_t length) {
+	str[length] = '\0';
 	for (size_t i = length - 1; i >= 0 && str[i] == ch; i--) {
 		str[i] = '\0';
 	}

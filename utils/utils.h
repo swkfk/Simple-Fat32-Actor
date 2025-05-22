@@ -18,10 +18,14 @@ int read_file(FILE *fp, void *out, size_t start, size_t len);
 
 // memory.c
 void *checked_malloc(size_t elem_size, size_t count);
+void *checked_realloc(void *ptr, size_t new_size);
 
 // string.c
 void strip_trailing(char *str, const char ch, size_t length);
 void unicode2char(uint8_t *dest, uint16_t *src, size_t length);
 void concat_short_name(char *dest, const char *basename, const char *extname);
+
+// array.c
+#include "array.h"
 
 #endif

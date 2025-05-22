@@ -22,6 +22,7 @@ OBJS := main.o								\
 	job/load.o							\
 	job/ls.o							\
 	job/quit.o							\
+	utils/array.o							\
 	utils/error.o							\
 	utils/exit.o							\
 	utils/file.o							\

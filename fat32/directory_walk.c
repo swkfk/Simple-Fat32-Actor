@@ -10,23 +10,47 @@
 #include "img.h"
 #include "location.h"
 
-static void copy_into_buffer(long_name_entry_t *buffer, struct Fat32_LongDirectoryEntry *dir) {
+static size_t copy_into_buffer(void *buffer, struct Fat32_LongDirectoryEntry *dir) {
 	void *dest = buffer;
 	memcpy(dest, dir->Unicode_1, sizeof(dir->Unicode_1));
 	dest += sizeof(dir->Unicode_1);
 	memcpy(dest, dir->Unicode_2, sizeof(dir->Unicode_2));
 	dest += sizeof(dir->Unicode_2);
 	memcpy(dest, dir->Unicode_3, sizeof(dir->Unicode_3));
+	return dest - buffer;
 }
 
-static void copy_into_string(char *dest, long_name_entry_t *src, size_t count) {
-	size_t len = 0;
-	dest[0] = '\0';
-	while (count--) {
-		unicode2char((uint8_t *)dest + len, (uint16_t *)(src + count),
-			     sizeof(long_name_entry_t) / 2);
-		len += sizeof(long_name_entry_t) / 2;
+void dump_last_dir(struct Array *dirs, struct Fat32_ShortDirectoryEntry **out) {
+	struct Fat32_ShortDirectoryEntry *sdir = array_get_elem(dirs, -1);
+	if (!sdir) {
+		Lwarn("Unexpected emprt dirs!");
 	}
+	if (out) {
+		*out = sdir;
+	}
+}
+
+void dump_short_name(struct Array *dirs, char *basename, char *extname) {
+	struct Fat32_ShortDirectoryEntry *sdir;
+	dump_last_dir(dirs, &sdir);
+
+	if (!sdir) {
+		basename[0] = extname[0] = '\0';
+		return;
+	}
+	memcpy(basename, sdir->BaseName, 8);
+	memcpy(extname, sdir->ExtName, 3);
+	strip_trailing(basename, ' ', 8);
+	strip_trailing(extname, ' ', 3);
+}
+
+void dump_long_name(struct Array *dirs, char *longname) {
+	char buffer[MAX_FILENAME_LENGTH * 2] = {};
+	size_t offset = 0;
+	for (int i = dirs->position - 2; i >= 0; i--) {
+		offset += copy_into_buffer(buffer + offset, array_get_elem(dirs, i));
+	}
+	unicode2char((uint8_t *)longname, (uint16_t *)buffer, MAX_FILENAME_LENGTH - 1);
 }
 
 void walk_directory_on_fat(struct Fat32_Image *img, int start_cluster,
@@ -34,13 +58,8 @@ void walk_directory_on_fat(struct Fat32_Image *img, int start_cluster,
 	const size_t cluster_size = img->header->BytesPerSector * img->header->SectorsPerCluster;
 	void *cluster_data =
 	    checked_malloc(img->header->BytesPerSector, img->header->SectorsPerCluster);
-	long_name_entry_t *filename_buffer =
-	    checked_malloc(sizeof(long_name_entry_t), MAX_FILENAME_ENTRY_COUNT);
-	char *filename =
-	    checked_malloc(1, sizeof(long_name_entry_t) * MAX_FILENAME_ENTRY_COUNT / 2);
 
-	size_t pos = 0;
-	bool warned_too_long = false;
+	struct Array *dirs = alloc_array(sizeof(struct DirectoryEntryWithOffset), 1);
 
 	FOR_FAT_ENTRY_CHAIN (cluster, start_cluster) {
 		read_cluster_content(cluster, cluster_data);
@@ -52,45 +71,28 @@ void walk_directory_on_fat(struct Fat32_Image *img, int start_cluster,
 			}
 
 			struct Fat32_ShortDirectoryEntry *sdir = dir;
-			struct Fat32_LongDirectoryEntry *ldir = dir;
 
-			uint8_t attr = sdir->Attribute;
-			if (attr == DIR_ATTR_LONG_NAME) {
-				if (pos == MAX_FILENAME_ENTRY_COUNT) {
-					if (!warned_too_long) {
-						copy_into_string(filename, filename_buffer, pos);
-						Lwarn("filename too long: %s", filename);
-						warned_too_long = true;
-					}
-				} else {
-					copy_into_buffer(filename_buffer + pos, ldir);
-					pos++;
+			struct DirectoryEntryWithOffset item = {
+			    .entry = *sdir,
+			    .offset =
+				loc_data_bytes_by_cluster(img, cluster) + (dir - cluster_data),
+			};
+			array_append_elem(dirs, &item);
+
+			if (sdir->Attribute != DIR_ATTR_LONG_NAME) {
+				// The cb shall free the dirs!
+				bool end = cb(dirs);
+				dirs = alloc_array(sizeof(struct DirectoryEntryWithOffset), 1);
+				if (end) {
+					goto out;
 				}
-				continue;
-			}
-
-			char base_name[9], ext_name[4];
-			memcpy(base_name, sdir->BaseName, 8);
-			memcpy(ext_name, sdir->ExtName, 3);
-			strip_trailing(base_name, ' ', 8);
-			strip_trailing(ext_name, ' ', 3);
-
-			// Handle the long file name
-			copy_into_string(filename, filename_buffer, pos);
-			pos = 0;
-			warned_too_long = false;
-
-			if (cb(sdir, loc_data_bytes_by_cluster(img, cluster) + (dir - cluster_data),
-			       base_name, ext_name, filename)) {
-				goto out;
 			}
 		}
 	}
 
 out:
 	free(cluster_data);
-	free(filename_buffer);
-	free(filename);
+	array_free(&dirs);
 }
 
 static fat_entry_t _now_searched_cluster;
@@ -98,6 +100,15 @@ static struct Fat32_ShortDirectoryEntry _now_searched_entry;
 static const char *_now_target_name;
 
 DefDirWalkCb(search_directory_callback) {
+	bool end = false;
+
+	char short_basename[9], short_extname[4], longname[MAX_FILENAME_LENGTH];
+	struct Fat32_ShortDirectoryEntry *dir;
+
+	dump_short_name(dirs, short_basename, short_extname);
+	dump_long_name(dirs, longname);
+	dump_last_dir(dirs, &dir);
+
 	Ltrace("Search Directory: _now_target_name: '%s', short_name: '%s', '%s', long_name: '%s'",
 	       _now_target_name, short_basename, short_extname, longname);
 	if (longname[0] != '\0') {
@@ -127,10 +138,16 @@ found:
 	_now_searched_cluster = JOIN_NUMBER(32, dir->StartCluster_hi, dir->StartCluster_lo);
 	Ltrace("Set _now_searched_cluster = %d", _now_searched_cluster);
 	_now_searched_entry = *dir;
-	return true;
+	end = true;
+	goto out;
 
 not_found:
-	return false;
+	end = false;
+	goto out;
+
+out:
+	array_free(&dirs);
+	return end;
 }
 
 fat_entry_t search_directory_on_fat(struct Fat32_Image *img, int start_cluster,

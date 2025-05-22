@@ -41,11 +41,23 @@ extern unsigned long _log_index;
 			printf(format "\033[0m\n", ##__VA_ARGS__);                                 \
 		}                                                                                  \
 	} while (0)
+#define __display(level, format, ...)                                                              \
+	do {                                                                                       \
+		if (level <= _global_log_level) {                                                  \
+			printf("\033[2;%dm" format "\033[0m", _log_colors[level], ##__VA_ARGS__);  \
+		}                                                                                  \
+	} while (0)
 
 // Logger useful macros
 #define Ltrace(format, ...) __logger(_L_Trace, format, ##__VA_ARGS__)
 #define Linfo(format, ...) __logger(_L_Info, format, ##__VA_ARGS__)
 #define Lwarn(format, ...) __logger(_L_Warning, format, ##__VA_ARGS__)
 #define Lerror(format, ...) __logger(_L_Error, format, ##__VA_ARGS__)
+
+// Display with levels
+#define Dtrace(format, ...) __display(_L_Trace, format, ##__VA_ARGS__)
+#define Dinfo(format, ...) __display(_L_Info, format, ##__VA_ARGS__)
+#define Dwarn(format, ...) __display(_L_Warning, format, ##__VA_ARGS__)
+#define Derror(format, ...) __display(_L_Error, format, ##__VA_ARGS__)
 
 #endif

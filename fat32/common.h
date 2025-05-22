@@ -16,7 +16,6 @@
 
 typedef uint32_t fat_entry_t;
 
-// filename length is 'sizeof(long_name_entry_t) * MAX_FILENAME_ENTRY_COUNT'
-#define MAX_FILENAME_ENTRY_COUNT 16
+#define MAX_FILENAME_LENGTH 128
 
 #endif
