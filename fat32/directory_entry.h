@@ -56,8 +56,6 @@ struct Fat32_LongDirectoryEntry {
 };
 #pragma pack()
 
-typedef uint8_t(long_name_entry_t)[26];
-
 struct DirectoryEntryWithOffset {
 	// Put it as the first element! It is a trick in array_get_elem.
 	struct Fat32_ShortDirectoryEntry entry;

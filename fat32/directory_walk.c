@@ -18,6 +18,7 @@ static size_t copy_into_buffer(void *buffer, struct Fat32_LongDirectoryEntry *di
 	memcpy(dest, dir->Unicode_2, sizeof(dir->Unicode_2));
 	dest += sizeof(dir->Unicode_2);
 	memcpy(dest, dir->Unicode_3, sizeof(dir->Unicode_3));
+	dest += sizeof(dir->Unicode_3);
 	return dest - buffer;
 }
 
