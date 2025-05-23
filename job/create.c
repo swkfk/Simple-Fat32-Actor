@@ -265,12 +265,28 @@ DEFINE_JOB(mv) {
 
 	dump_last_dir(src_dirs, &src_last_entry);
 
+	// Invalidate the old entries first to avoid move parent into its child
+	for (size_t i = 0; i < src_dirs->position; i++) {
+		struct DirectoryEntryWithOffset *o = array_get_elem(src_dirs, i);
+		o->entry._Reserved_1 = o->entry.BaseName[0];
+		o->entry.BaseName[0] = 0xE5;
+		write_file_directory_entry(img.fp, o);
+	}
+
 	// Create the new entry first AS A FILE!
 	fat_entry_t dest_parent_cluster = 0;
 	struct DirectoryEntryWithOffset dest_last_entry;
 	ret = create_item(true, argv[argc - 1], argv + pos_of_arrow + 1, dest_count - 1,
 			  &dest_last_entry, &dest_parent_cluster);
 	if (ret) {
+		// Recover the invalidated items
+		for (size_t i = 0; i < src_dirs->position; i++) {
+			struct DirectoryEntryWithOffset *o = array_get_elem(src_dirs, i);
+			o->entry.BaseName[0] = o->entry._Reserved_1;
+			o->entry._Reserved_1 = 0;
+			write_file_directory_entry(img.fp, o);
+		}
+
 		goto out;
 	}
 
@@ -291,13 +307,6 @@ DEFINE_JOB(mv) {
 		dotdot.StartCluster_hi = (dest_parent_cluster >> 16) & 0xFF;
 		dotdot.StartCluster_lo = (dest_parent_cluster) & 0xFF;
 		write_file(img.fp, &dotdot, offset, sizeof(struct Fat32_ShortDirectoryEntry));
-	}
-
-	// Invalidate the old entries
-	for (size_t i = 0; i < src_dirs->position; i++) {
-		struct DirectoryEntryWithOffset *o = array_get_elem(src_dirs, i);
-		o->entry.BaseName[0] = 0xE5;
-		write_file_directory_entry(img.fp, o);
 	}
 
 out:
