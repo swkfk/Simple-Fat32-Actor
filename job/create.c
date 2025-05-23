@@ -304,8 +304,12 @@ DEFINE_JOB(mv) {
 		size_t offset = loc_data_bytes_by_cluster(&img, src_start_cluster) +
 				sizeof(struct Fat32_ShortDirectoryEntry);
 		read_file(img.fp, &dotdot, offset, sizeof(struct Fat32_ShortDirectoryEntry));
-		dotdot.StartCluster_hi = (dest_parent_cluster >> 16) & 0xFF;
-		dotdot.StartCluster_lo = (dest_parent_cluster) & 0xFF;
+		if (dest_parent_cluster != img.header->RootClusterNumber) {
+			dotdot.StartCluster_hi = (dest_parent_cluster >> 16) & 0xFFFF;
+			dotdot.StartCluster_lo = (dest_parent_cluster) & 0xFFFF;
+		} else {
+			dotdot.StartCluster_hi = dotdot.StartCluster_lo = 0;
+		}
 		write_file(img.fp, &dotdot, offset, sizeof(struct Fat32_ShortDirectoryEntry));
 	}
 
