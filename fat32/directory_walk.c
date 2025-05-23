@@ -8,6 +8,7 @@
 #include "directory_entry.h"
 #include "directory_walk.h"
 #include "fat_reader.h"
+#include "fat_write.h"
 #include "img.h"
 #include "location.h"
 
@@ -204,9 +205,13 @@ int alloc_directory_entries(struct Fat32_Image *img, fat_entry_t start_cluster, 
 	void *cluster_data =
 	    checked_malloc(img->header->BytesPerSector, img->header->SectorsPerCluster);
 
+	fat_entry_t last_cluster;
+
 	FOR_FAT_ENTRY_CHAIN (cluster, start_cluster) {
 		read_cluster_content(cluster, cluster_data);
-		FOR_DIRECTORY_ENTRY (entry, cluster_data, cluster_size) {
+		last_cluster = cluster;
+		for (void *entry = cluster_data; entry < ((void *)cluster_data + cluster_size);
+		     entry += sizeof(struct Fat32_ShortDirectoryEntry)) {
 			uint8_t leading_byte = ((unsigned char *)entry)[0];
 			if (leading_byte != 0xE5 && leading_byte != 0x00) {
 				array_drop_all(entries);
@@ -224,11 +229,28 @@ int alloc_directory_entries(struct Fat32_Image *img, fat_entry_t start_cluster, 
 		}
 	}
 
-	while (entries->position < count) {
-		//
+	size_t entry_per_cluster = cluster_size / sizeof(struct Fat32_ShortDirectoryEntry);
+	size_t new_cluster_needed =
+	    (count - entries->position + entry_per_cluster - 1) / entry_per_cluster;
+
+	allocate_cluster_chain(start_cluster, new_cluster_needed);
+
+	for (fat_entry_t cluster = fat_next_cluster(last_cluster); fat_is_valid_cluster(cluster);
+	     cluster = fat_next_cluster(cluster)) {
+
+		for (size_t offset = 0; offset < cluster_size && entries->position < count;
+		     offset += sizeof(struct Fat32_ShortDirectoryEntry)) {
+
+			struct DirectoryEntryWithOffset item = {
+			    .offset = loc_data_bytes_by_cluster(img, cluster) + offset,
+			};
+			array_append_elem(entries, &item);
+		}
 	}
 
 alloc_over:
+	Ltrace("Allocated %zd (%zd really) %s from start cluster %d", count, entries->position,
+	       count <= 1 ? "entry" : "entries", start_cluster);
 
 	free(cluster_data);
 	return 0;

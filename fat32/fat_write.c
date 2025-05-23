@@ -77,3 +77,20 @@ int allocate_cluster_chain(fat_entry_t start_cluster, size_t addition_count) {
 	invalidate_fat();
 	return 0;
 }
+
+int allocate_orphan_cluster(fat_entry_t *out) {
+	fat_entry_t allocated = find_free_cluster();
+	if (allocated == 0) {
+		return E_NoSpace;
+	}
+	Ltrace("Allocate cluster: %x", allocated);
+
+	img.fsinfo->NextEmptyClusterNumber = allocated;
+	img.fsinfo->EmptyClusterCount--;
+
+	write_cluster_in_fat(allocated, FAT_ENTRY_TERMINATE_LOW);
+	invalidate_fat();
+
+	*out = allocated;
+	return 0;
+}

@@ -8,5 +8,6 @@
 void release_cluster_chain(fat_entry_t start_cluster);
 void truncate_cluster_chain(fat_entry_t start_cluster, size_t remained_count);
 int allocate_cluster_chain(fat_entry_t start_cluster, size_t addition_count);
+int allocate_orphan_cluster(fat_entry_t *out);
 
 #endif

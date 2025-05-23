@@ -16,6 +16,12 @@ void unicode2char(uint8_t *dest, uint16_t *src, size_t length) {
 	dest[length] = '\0';
 }
 
+void char2unicode(uint16_t *dest, uint8_t *src, size_t length) {
+	for (size_t i = 0; i < length; i++) {
+		dest[i] = ((uint16_t)src[i]) & 0xFF;
+	}
+}
+
 void concat_short_name(char *dest, const char *basename, const char *extname) {
 	strcpy(dest, basename);
 	if (extname[0] != '\0') {

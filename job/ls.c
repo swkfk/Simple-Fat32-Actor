@@ -36,7 +36,7 @@ DefDirWalkCb(display_entry_info) {
 
 	dt = parse_datetime(dir->ModifyDate, dir->ModifyTime, 0);
 	datetime_string(dt_string, &dt);
-	display("%s  ", dt_string);
+	display("%s ", dt_string);
 
 	// Attributes
 	if (DIR_ENTRY_IS_READONLY(dir)) {
@@ -46,9 +46,14 @@ DefDirWalkCb(display_entry_info) {
 		display("%s ", "HIDDEN");
 	}
 
+	// Show short name!
+	if (longname[0]) {
+		Dtrace("B: '%8s', E: '%3s' ", short_basename, short_extname);
+	}
+
 	for (int i = 0; i < dirs->position; i++) {
 		struct DirectoryEntryWithOffset *dir = array_get_elem(dirs, i);
-		Dtrace(" %zx", dir->offset);
+		Dtrace("%zx ", dir->offset);
 	}
 
 	display("\n");

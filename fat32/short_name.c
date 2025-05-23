@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include <string.h>
 
+#include "../interact/logger.h"
 #include "../utils/utils.h"
 #include "short_name.h"
 
@@ -46,8 +47,9 @@ int short_name_find_index(const struct ShortName *sn, struct Array *list) {
 	bool this_index_ok;
 
 	// The condition to avoid endless loop!
-	for (tmp.index = 1; tmp.index <= list->position; tmp.index++) {
-		short_name_to_string(&tmp, tmp_short_name);
+	for (tmp.index = 0; tmp.index <= list->position; tmp.index++) {
+		short_name_to_string(&tmp, tmp_short_name, NULL, NULL);
+		Dtrace("Try shortname: '%s'\n", tmp_short_name);
 		this_index_ok = true;
 		for (int i = 0; i < list->position; i++) {
 			if (!strcmp(tmp_short_name, array_get_elem(list, i))) {
@@ -63,18 +65,32 @@ int short_name_find_index(const struct ShortName *sn, struct Array *list) {
 	return -1;
 }
 
-void short_name_to_string(const struct ShortName *sn, char *out) {
+void short_name_to_string(const struct ShortName *sn, char *out, char *out_basename,
+			  char *out_extname) {
+	if (out_extname) {
+		strcpy(out_extname, sn->extname);
+	}
 	if (sn->index == 0) {
 		concat_short_name(out, sn->basename, sn->extname);
+		if (out_basename) {
+			strcpy(out_basename, sn->basename);
+		}
 	} else {
 		int number_length;
 		char number[9], base_name[9];
 		sprintf(number, "~%d%n", sn->index, &number_length);
 
 		strcpy(base_name, sn->basename);
-		strcpy(base_name + 8 - number_length, number);
+		if (strlen(base_name) + number_length <= 8) {
+			strcat(base_name, number);
+		} else {
+			strcpy(base_name + 8 - number_length, number);
+		}
 
 		concat_short_name(out, base_name, sn->extname);
+		if (out_basename) {
+			strcpy(out_basename, base_name);
+		}
 	}
 }
 
@@ -91,14 +107,16 @@ bool is_already_shortname(const char *filename) {
 
 	// Check base name: 1-8 uppercase letters or digits, no spaces
 	for (size_t i = 0; i < base_len; i++) {
-		if (!isalnum(filename[i]) || !isupper(filename[i]))
+		if (!isalnum(filename[i]) || !isupper(filename[i])) {
 			return false;
+		}
 	}
 
 	// Check extension: 0-3 uppercase letters or digits, no spaces
 	for (size_t i = 0; i < ext_len; i++) {
-		if (!isalnum(dot[1 + i]) || !isupper(dot[1 + i]))
+		if (!isalnum(dot[1 + i]) || !isupper(dot[1 + i])) {
 			return false;
+		}
 	}
 
 	return true;

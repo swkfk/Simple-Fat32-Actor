@@ -1,7 +1,10 @@
 #include <string.h>
 
 #include "../fat32/directory_walk.h"
+#include "../fat32/fat_write.h"
+#include "../fat32/location.h"
 #include "../fat32/short_name.h"
+#include "../utils/array.h"
 #include "job.h"
 
 static struct Array *_short_list;
@@ -69,33 +72,121 @@ static int create_item(bool is_file, const char *filename, char **pathes, int pa
 		goto out_free_array;
 	}
 
-	char shortname[14];
-	bool only_shortname = is_already_shortname(filename);
-	if (only_shortname) {
-		strcpy(shortname, filename);
-	} else {
-		struct ShortName sn;
-		short_name_basic_spawn(filename, &sn);
-		Dtrace("B: '%s', E: '%s'\n", sn.basename, sn.extname);
-		int index = short_name_find_index(&sn, _short_list);
-		if (index < 0) {
-			Lwarn("Cannot find a correct index in shortname");
-			ret = E_PermissionDenied;
-			goto out_free_array;
-		}
-		sn.index = index;
-		short_name_to_string(&sn, shortname);
+	char shortname[14], short_base[9], short_ext[4];
+
+	struct ShortName sn;
+	short_name_basic_spawn(filename, &sn);
+	Dtrace("B: '%s', E: '%s'\n", sn.basename, sn.extname);
+	int index = short_name_find_index(&sn, _short_list);
+	if (index < 0) {
+		Lwarn("Cannot find a correct index in shortname");
+		ret = E_PermissionDenied;
+		goto out_free_array;
 	}
+	sn.index = index;
+	short_name_to_string(&sn, shortname, short_base, short_ext);
 
 	int directory_needed = 1;
-	if (!only_shortname) {
+	if (!is_already_shortname(filename) || sn.index != 0) {
 		directory_needed += (strlen(filename) + 12) / 13;
 	}
 
 	Ltrace("Create item: Longname('%s'), Shortname('%s'), need %d %s", filename, shortname,
 	       directory_needed, directory_needed == 1 ? "entry" : "entries");
 
-	//
+	// Alloc directory entries, but we do not use the entry inside
+	DirectoryEntries new_entries = alloc_array(sizeof(struct DirectoryEntryWithOffset), 0);
+	alloc_directory_entries(&img, parent_dir_cluster, directory_needed, new_entries);
+
+	Ltrace("Allocated enteries: %zd", new_entries->position);
+	for (size_t i = 0; i < new_entries->position; i++) {
+		struct DirectoryEntryWithOffset *o = array_get_elem(new_entries, i);
+		Dtrace("(O): %zx\n", o->offset);
+	}
+
+	// Write the last entry (The shortname entry)
+	struct Fat32_ShortDirectoryEntry short_entry = {};
+
+	// Fill short name
+	memset(short_entry.BaseName, ' ', 8);
+	memset(short_entry.ExtName, ' ', 3);
+	memcpy(short_entry.BaseName, short_base, strlen(short_base));
+	memcpy(short_entry.ExtName, short_ext, strlen(short_ext));
+
+	Ltrace("Short name filled!");
+	// TODO: Fill the datetime
+
+	if (is_file) {
+		// Do nothing!
+	} else {
+		short_entry.Attribute = DIR_ATTR_DIRECTORY;
+
+		// Alloc a cluster for directory
+		fat_entry_t allocated;
+		if ((ret = allocate_orphan_cluster(&allocated))) {
+			goto out_free_entries;
+		}
+		short_entry.StartCluster_hi = (allocated >> 16) & 0xFFFF;
+		short_entry.StartCluster_lo = (allocated) & 0xFFFF;
+
+		// Fill the '.' & '..' entry
+		struct Fat32_ShortDirectoryEntry dot[2] = {};
+		// Simple name
+		memset(dot[0].BaseName, ' ', 8 + 3);
+		dot[0].BaseName[0] = '.';
+		memset(dot[1].BaseName, ' ', 8 + 3);
+		dot[1].BaseName[0] = '.';
+		dot[1].BaseName[1] = '.';
+		// Attribute
+		dot[0].Attribute = DIR_ATTR_DIRECTORY;
+		dot[1].Attribute = DIR_ATTR_DIRECTORY;
+		// Cluster
+		dot[0].StartCluster_hi = short_entry.StartCluster_hi;
+		dot[0].StartCluster_lo = short_entry.StartCluster_lo;
+		if (parent_dir_cluster != img.header->RootClusterNumber) {
+			dot[1].StartCluster_hi = (parent_dir_cluster >> 16) & 0xFFFF;
+			dot[1].StartCluster_lo = (parent_dir_cluster) & 0xFFFF;
+		}
+		// TODO: Fill the datetime
+		// Write into the cluster
+		write_file(img.fp, dot, loc_data_bytes_by_cluster(&img, allocated),
+			   2 * sizeof(struct Fat32_ShortDirectoryEntry));
+	}
+
+	// Write the short entry
+	write_file(img.fp, &short_entry,
+		   ((struct DirectoryEntryWithOffset *)array_get_elem(new_entries, -1))->offset,
+		   sizeof(struct Fat32_ShortDirectoryEntry));
+
+	// Fill the longname
+	struct Fat32_LongDirectoryEntry long_entry = {.Attribute = DIR_ATTR_LONG_NAME};
+
+	// A simple way to avoid out of boundary
+	char longname[MAX_FILENAME_LENGTH + 26] = {};
+	strcpy(longname, filename);
+
+	for (int i = 1; i < directory_needed; i++) {
+		struct DirectoryEntryWithOffset *entry = array_get_elem(new_entries, -1 - i);
+		size_t offset_in_string = (i - 1) * 13;
+		char2unicode((uint16_t *)long_entry.Unicode_1,
+			     (uint8_t *)longname + offset_in_string, 5);
+		char2unicode((uint16_t *)long_entry.Unicode_2,
+			     (uint8_t *)longname + offset_in_string + 5, 6);
+		char2unicode((uint16_t *)long_entry.Unicode_3,
+			     (uint8_t *)longname + offset_in_string + 11, 2);
+		long_entry.Sequence = i;
+		long_entry.IsLastEntry = (i == directory_needed - 1);
+		// Write the long entry
+		write_file(img.fp, &long_entry, entry->offset,
+			   sizeof(struct Fat32_LongDirectoryEntry));
+	}
+
+out_free_entries:
+	// Write back the fsinfo. Even the error occurred, we still keep the allocated clusters for
+	// the directories
+	write_file(img.fp, img.fsinfo, img.header->FSINFO_SectorNumber * img.header->BytesPerSector,
+		   sizeof(struct Fat32_FsInfo));
+	array_free(&new_entries);
 
 out_free_array:
 	array_free(&_short_list);

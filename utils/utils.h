@@ -24,6 +24,7 @@ void *checked_realloc(void *ptr, size_t new_size);
 // string.c
 void strip_trailing(char *str, const char ch, size_t length);
 void unicode2char(uint8_t *dest, uint16_t *src, size_t length);
+void char2unicode(uint16_t *dest, uint8_t *src, size_t length);
 void concat_short_name(char *dest, const char *basename, const char *extname);
 
 // array.c

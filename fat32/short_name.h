@@ -11,7 +11,8 @@ struct ShortName {
 
 void short_name_basic_spawn(const char *longname, struct ShortName *out);
 int short_name_find_index(const struct ShortName *sn, struct Array *list);
-void short_name_to_string(const struct ShortName *sn, char *out);
+void short_name_to_string(const struct ShortName *sn, char *out, char *out_basename,
+			  char *out_extname);
 bool is_already_shortname(const char *filename);
 
 #endif

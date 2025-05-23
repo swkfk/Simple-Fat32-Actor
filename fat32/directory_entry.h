@@ -41,10 +41,10 @@ struct Fat32_ShortDirectoryEntry {
 #pragma pack(1)
 struct Fat32_LongDirectoryEntry {
 	struct {
-		uint8_t Reserved_1 : 1;
-		uint8_t IsLastEntry : 1;
-		uint8_t Reserved_2 : 1;
 		uint8_t Sequence : 5;
+		uint8_t Reserved_2 : 1;
+		uint8_t IsLastEntry : 1;
+		uint8_t Reserved_1 : 1;
 	};
 	ArrayField(10, Unicode_1);
 	Field(8, Attribute);
