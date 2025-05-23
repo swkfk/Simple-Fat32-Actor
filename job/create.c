@@ -105,13 +105,14 @@ static int create_item(bool is_file, const char *filename, char **pathes, int pa
 	}
 
 	// Write the last entry (The shortname entry)
-	struct Fat32_ShortDirectoryEntry short_entry = {};
+	struct DirectoryEntryWithOffset *short_entry_off = array_get_elem(new_entries, -1);
+	struct Fat32_ShortDirectoryEntry *short_entry = &short_entry_off->entry;
 
 	// Fill short name
-	memset(short_entry.BaseName, ' ', 8);
-	memset(short_entry.ExtName, ' ', 3);
-	memcpy(short_entry.BaseName, short_base, strlen(short_base));
-	memcpy(short_entry.ExtName, short_ext, strlen(short_ext));
+	memset(short_entry->BaseName, ' ', 8);
+	memset(short_entry->ExtName, ' ', 3);
+	memcpy(short_entry->BaseName, short_base, strlen(short_base));
+	memcpy(short_entry->ExtName, short_ext, strlen(short_ext));
 
 	Ltrace("Short name filled!");
 	// TODO: Fill the datetime
@@ -119,15 +120,15 @@ static int create_item(bool is_file, const char *filename, char **pathes, int pa
 	if (is_file) {
 		// Do nothing!
 	} else {
-		short_entry.Attribute = DIR_ATTR_DIRECTORY;
+		short_entry->Attribute = DIR_ATTR_DIRECTORY;
 
 		// Alloc a cluster for directory
 		fat_entry_t allocated;
 		if ((ret = allocate_orphan_cluster(&allocated))) {
 			goto out_free_entries;
 		}
-		short_entry.StartCluster_hi = (allocated >> 16) & 0xFFFF;
-		short_entry.StartCluster_lo = (allocated) & 0xFFFF;
+		short_entry->StartCluster_hi = (allocated >> 16) & 0xFFFF;
+		short_entry->StartCluster_lo = (allocated) & 0xFFFF;
 
 		// Fill the '.' & '..' entry
 		struct Fat32_ShortDirectoryEntry dot[2] = {};
@@ -141,8 +142,8 @@ static int create_item(bool is_file, const char *filename, char **pathes, int pa
 		dot[0].Attribute = DIR_ATTR_DIRECTORY;
 		dot[1].Attribute = DIR_ATTR_DIRECTORY;
 		// Cluster
-		dot[0].StartCluster_hi = short_entry.StartCluster_hi;
-		dot[0].StartCluster_lo = short_entry.StartCluster_lo;
+		dot[0].StartCluster_hi = short_entry->StartCluster_hi;
+		dot[0].StartCluster_lo = short_entry->StartCluster_lo;
 		if (parent_dir_cluster != img.header->RootClusterNumber) {
 			dot[1].StartCluster_hi = (parent_dir_cluster >> 16) & 0xFFFF;
 			dot[1].StartCluster_lo = (parent_dir_cluster) & 0xFFFF;
@@ -154,32 +155,35 @@ static int create_item(bool is_file, const char *filename, char **pathes, int pa
 	}
 
 	// Write the short entry
-	write_file(img.fp, &short_entry,
-		   ((struct DirectoryEntryWithOffset *)array_get_elem(new_entries, -1))->offset,
-		   sizeof(struct Fat32_ShortDirectoryEntry));
+	write_file_directory_entry(img.fp, short_entry_off);
 
 	// Fill the longname
-	struct Fat32_LongDirectoryEntry long_entry = {.Attribute = DIR_ATTR_LONG_NAME,
-						      .Checksum = calculate_checksum(&short_entry)};
+	uint8_t checksum = calculate_checksum(short_entry);
 
 	// A simple way to avoid out of boundary
 	char longname[MAX_FILENAME_LENGTH + 26] = {};
 	strcpy(longname, filename);
 
 	for (int i = 1; i < directory_needed; i++) {
-		struct DirectoryEntryWithOffset *entry = array_get_elem(new_entries, -1 - i);
+		struct DirectoryEntryWithOffset *long_entry_off =
+		    array_get_elem(new_entries, -1 - i);
+		struct Fat32_LongDirectoryEntry *long_entry =
+		    (struct Fat32_LongDirectoryEntry *)&long_entry_off->entry;
+
 		size_t offset_in_string = (i - 1) * 13;
-		char2unicode((uint16_t *)long_entry.Unicode_1,
+		char2unicode((uint16_t *)long_entry->Unicode_1,
 			     (uint8_t *)longname + offset_in_string, 5);
-		char2unicode((uint16_t *)long_entry.Unicode_2,
+		char2unicode((uint16_t *)long_entry->Unicode_2,
 			     (uint8_t *)longname + offset_in_string + 5, 6);
-		char2unicode((uint16_t *)long_entry.Unicode_3,
+		char2unicode((uint16_t *)long_entry->Unicode_3,
 			     (uint8_t *)longname + offset_in_string + 11, 2);
-		long_entry.Sequence = i;
-		long_entry.IsLastEntry = (i == directory_needed - 1);
+
+		long_entry->Sequence = i;
+		long_entry->IsLastEntry = (i == directory_needed - 1);
+		long_entry->Attribute = DIR_ATTR_LONG_NAME;
+		long_entry->Checksum = checksum;
 		// Write the long entry
-		write_file(img.fp, &long_entry, entry->offset,
-			   sizeof(struct Fat32_LongDirectoryEntry));
+		write_file_directory_entry(img.fp, long_entry_off);
 	}
 
 out_free_entries:

@@ -1,5 +1,6 @@
 #include <stdio.h>
 
+#include "../fat32/directory_entry.h"
 #include "../interact/logger.h"
 
 int read_file(FILE *fp, void *out, size_t start, size_t len) {
@@ -45,4 +46,8 @@ int write_file(FILE *fp, void *data, size_t start, size_t len) {
 	}
 
 	return 0; // Success
+}
+
+int write_file_directory_entry(FILE *fp, struct DirectoryEntryWithOffset *o) {
+	return write_file(fp, &o->entry, o->offset, sizeof(struct Fat32_ShortDirectoryEntry));
 }

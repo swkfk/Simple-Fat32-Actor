@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "../fat32/directory_entry.h"
 #include "macros.h"
 
 // exit.c
@@ -16,6 +17,7 @@ const char *get_error_reason(int);
 // file.c
 int read_file(FILE *fp, void *out, size_t start, size_t len);
 int write_file(FILE *fp, void *data, size_t start, size_t len);
+int write_file_directory_entry(FILE *fp, struct DirectoryEntryWithOffset *o);
 
 // memory.c
 void *checked_malloc(size_t elem_size, size_t count);
