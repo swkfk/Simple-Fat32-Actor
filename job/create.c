@@ -159,7 +159,8 @@ static int create_item(bool is_file, const char *filename, char **pathes, int pa
 		   sizeof(struct Fat32_ShortDirectoryEntry));
 
 	// Fill the longname
-	struct Fat32_LongDirectoryEntry long_entry = {.Attribute = DIR_ATTR_LONG_NAME};
+	struct Fat32_LongDirectoryEntry long_entry = {.Attribute = DIR_ATTR_LONG_NAME,
+						      .Checksum = calculate_checksum(&short_entry)};
 
 	// A simple way to avoid out of boundary
 	char longname[MAX_FILENAME_LENGTH + 26] = {};

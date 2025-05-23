@@ -255,3 +255,12 @@ alloc_over:
 	free(cluster_data);
 	return 0;
 }
+
+uint8_t calculate_checksum(struct Fat32_ShortDirectoryEntry *sdir) {
+	uint8_t i, j, chksum = 0;
+	for (i = 11; i > 0; i--) {
+		// BaseName index out of boundary allowed
+		chksum = ((chksum & 1) ? 0x80 : 0) + (chksum >> 1) + sdir->BaseName[j++];
+	}
+	return chksum;
+}

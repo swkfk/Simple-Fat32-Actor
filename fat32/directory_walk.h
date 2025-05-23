@@ -23,5 +23,6 @@ int search_path(struct Fat32_Image *img, const char **pathes, int count, Directo
 		fat_entry_t *out_start_cluster);
 int alloc_directory_entries(struct Fat32_Image *img, fat_entry_t start_cluster, size_t count,
 			    DirectoryEntries entries);
+uint8_t calculate_checksum(struct Fat32_ShortDirectoryEntry *sdir);
 
 #endif
