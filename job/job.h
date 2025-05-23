@@ -22,6 +22,9 @@ DEFINE_JOB(exit);
 // rm.c
 DEFINE_JOB(rm);
 DEFINE_JOB(truncate);
+// create.c
+DEFINE_JOB(touch);
+DEFINE_JOB(mkdir);
 // debug/fat.c
 DEFINE_JOB(read_data);
 DEFINE_JOB(read_directory);

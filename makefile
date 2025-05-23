@@ -13,10 +13,12 @@ OBJS := main.o								\
 	fat32/global.o							\
 	fat32/img.o							\
 	fat32/location.o						\
+	fat32/short_name.o						\
 	interact/input.o						\
 	interact/logtime.o						\
 	interact/loglevel.o						\
 	job/debug/fat.o							\
+	job/create.o							\
 	job/dummy.o							\
 	job/help.o							\
 	job/info.o							\
