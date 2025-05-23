@@ -14,6 +14,8 @@ job_t jobs[] = {
     REGISTER_JOB(touch, "Touch the file <Arg-last-one> in /<Arg1>/<Arg2>/...<Arg-last-two>"),
     REGISTER_JOB(mkdir, "Create the directory <Arg-last-one> in /<Arg1>/<Arg2>/...<Arg-last-two>"),
     REGISTER_JOB(rm, "Remove the file or empty directory in /<Arg1>/<Arg2>/...<Arg-last-one>"),
+    REGISTER_JOB(mv, "Move the file or directory from /<Arg1>/.../<Arg-x-1> into "
+		     "/<Arg-x+1>/.../<Arg-last-one>, <Arg-x> shall be '->'"),
     REGISTER_JOB(truncate, "Truncate the file of /<Arg2>/...<Arg-last-one> into <Arg1> byte(s)"),
     REGISTER_JOB(exit, "Exit the program"),
     REGISTER_JOB_ALIAS(quit, exit, "Exit the program"),

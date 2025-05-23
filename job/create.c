@@ -36,7 +36,9 @@ DefDirWalkCb(collect_all_shortname_cb) {
 	return false;
 }
 
-static int create_item(bool is_file, const char *filename, char **pathes, int path_count) {
+static int create_item(bool is_file, const char *filename, char **pathes, int path_count,
+		       struct DirectoryEntryWithOffset *out_last_entry,
+		       fat_entry_t *out_parent_start_cluster) {
 	if (strlen(filename) > MAX_FILENAME_LENGTH - 1) {
 		Lwarn("Filename too long, %d-1 allowed", MAX_FILENAME_LENGTH);
 		return E_InvalidParam;
@@ -58,6 +60,10 @@ static int create_item(bool is_file, const char *filename, char **pathes, int pa
 	if (parent_dir_cluster != img.header->RootClusterNumber && entry &&
 	    DIR_ENTRY_IS_FILE(entry)) {
 		return E_ThisIsAFile;
+	}
+
+	if (out_parent_start_cluster) {
+		*out_parent_start_cluster = parent_dir_cluster;
 	}
 
 	_short_list = alloc_array(14, 0);
@@ -156,6 +162,9 @@ static int create_item(bool is_file, const char *filename, char **pathes, int pa
 
 	// Write the short entry
 	write_file_directory_entry(img.fp, short_entry_off);
+	if (out_last_entry) {
+		*out_last_entry = *short_entry_off;
+	}
 
 	// Fill the longname
 	uint8_t checksum = calculate_checksum(short_entry);
@@ -203,12 +212,97 @@ DEFINE_JOB(touch) {
 	if (argc == 1) {
 		return E_InvalidParam;
 	}
-	return create_item(true, argv[argc - 1], argv + 1, argc - 2);
+	return create_item(true, argv[argc - 1], argv + 1, argc - 2, NULL, NULL);
 }
 
 DEFINE_JOB(mkdir) {
 	if (argc == 1) {
 		return E_InvalidParam;
 	}
-	return create_item(false, argv[argc - 1], argv + 1, argc - 2);
+	return create_item(false, argv[argc - 1], argv + 1, argc - 2, NULL, NULL);
+}
+
+DEFINE_JOB(mv) {
+	int ret = 0;
+
+	int pos_of_arrow = -1;
+	for (int i = 1; i < argc; i++) {
+		if (!strcmp(argv[i], "->")) {
+			pos_of_arrow = i;
+			break;
+		}
+	}
+	if (pos_of_arrow == -1) {
+		Lwarn("-> is needed in the arguments!");
+		return E_InvalidParam;
+	}
+	if (pos_of_arrow == argc - 1) {
+		Lwarn("-> shall not be the last argument!");
+		return E_InvalidParam;
+	}
+
+	size_t src_count = pos_of_arrow - 1;
+	size_t dest_count = argc - pos_of_arrow - 1;
+
+	fat_entry_t src_start_cluster = 0;
+	DirectoryEntries src_dirs = NULL;
+	struct Fat32_ShortDirectoryEntry *src_last_entry = NULL;
+
+	ret = search_path(&img, (const char **)argv + 1, src_count, &src_dirs, &src_start_cluster);
+	if (ret) {
+		goto out;
+	}
+
+	if (src_start_cluster == img.header->RootClusterNumber) {
+		ret = E_PermissionDenied;
+		goto out;
+	}
+
+	if (!src_dirs) {
+		ret = E_FileOrDirectoryNotFound;
+		goto out;
+	}
+
+	dump_last_dir(src_dirs, &src_last_entry);
+
+	// Create the new entry first AS A FILE!
+	fat_entry_t dest_parent_cluster = 0;
+	struct DirectoryEntryWithOffset dest_last_entry;
+	ret = create_item(true, argv[argc - 1], argv + pos_of_arrow + 1, dest_count - 1,
+			  &dest_last_entry, &dest_parent_cluster);
+	if (ret) {
+		goto out;
+	}
+
+	// Modify the new entry
+	dest_last_entry.entry.StartCluster_hi = src_last_entry->StartCluster_hi;
+	dest_last_entry.entry.StartCluster_lo = src_last_entry->StartCluster_lo;
+	dest_last_entry.entry.FileLength = src_last_entry->FileLength;
+	dest_last_entry.entry.Attribute = src_last_entry->Attribute;
+	write_file_directory_entry(img.fp, &dest_last_entry);
+	// TODO: Fill the datetime
+
+	// If is directory, modify the parent directory cluster
+	if (DIR_ENTRY_IS_DIR(src_last_entry)) {
+		struct Fat32_ShortDirectoryEntry dotdot;
+		size_t offset = loc_data_bytes_by_cluster(&img, src_start_cluster) +
+				sizeof(struct Fat32_ShortDirectoryEntry);
+		read_file(img.fp, &dotdot, offset, sizeof(struct Fat32_ShortDirectoryEntry));
+		dotdot.StartCluster_hi = (dest_parent_cluster >> 16) & 0xFF;
+		dotdot.StartCluster_lo = (dest_parent_cluster) & 0xFF;
+		write_file(img.fp, &dotdot, offset, sizeof(struct Fat32_ShortDirectoryEntry));
+	}
+
+	// Invalidate the old entries
+	for (size_t i = 0; i < src_dirs->position; i++) {
+		struct DirectoryEntryWithOffset *o = array_get_elem(src_dirs, i);
+		o->entry.BaseName[0] = 0xE5;
+		write_file_directory_entry(img.fp, o);
+	}
+
+out:
+	if (src_dirs) {
+		array_free(&src_dirs);
+	}
+	return ret;
 }
