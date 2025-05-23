@@ -33,6 +33,10 @@ void array_append_elem(struct Array *array, void *data) {
 	array->position++;
 }
 
+void array_drop_all(struct Array *array) {
+	array->position = 0;
+}
+
 void array_free(struct Array **p) {
 	free((*p)->_data);
 	free(*p);

@@ -197,3 +197,39 @@ int search_path(struct Fat32_Image *img, const char **pathes, int count, Directo
 
 	return 0;
 }
+
+int alloc_directory_entries(struct Fat32_Image *img, fat_entry_t start_cluster, size_t count,
+			    DirectoryEntries entries) {
+	const size_t cluster_size = img->header->BytesPerSector * img->header->SectorsPerCluster;
+	void *cluster_data =
+	    checked_malloc(img->header->BytesPerSector, img->header->SectorsPerCluster);
+
+	FOR_FAT_ENTRY_CHAIN (cluster, start_cluster) {
+		read_cluster_content(cluster, cluster_data);
+		FOR_DIRECTORY_ENTRY (entry, cluster_data, cluster_size) {
+			uint8_t leading_byte = ((unsigned char *)entry)[0];
+			if (leading_byte != 0xE5 && leading_byte != 0x00) {
+				array_drop_all(entries);
+				continue;
+			}
+			struct DirectoryEntryWithOffset item = {
+			    .offset =
+				loc_data_bytes_by_cluster(img, cluster) + (entry - cluster_data),
+			};
+			array_append_elem(entries, &item);
+
+			if (entries->position == count) {
+				goto alloc_over;
+			}
+		}
+	}
+
+	while (entries->position < count) {
+		//
+	}
+
+alloc_over:
+
+	free(cluster_data);
+	return 0;
+}

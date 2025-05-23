@@ -21,7 +21,7 @@ void short_name_basic_spawn(const char *longname, struct ShortName *out) {
 
 	if (r_dot != longname + long_length) {
 		for (const char *it = r_dot + 1; *it && ext_pos < 3; it++) {
-			if (!isalpha(*it)) {
+			if (!isalpha(*it) && !isdigit(*it)) {
 				// We delete all invalid characters here
 				continue;
 			}
@@ -31,7 +31,7 @@ void short_name_basic_spawn(const char *longname, struct ShortName *out) {
 	out->extname[ext_pos] = '\0';
 
 	for (const char *it = longname; it < r_dot && *it && base_pos < 8; it++) {
-		if (!isalpha(*it)) {
+		if (!isalpha(*it) && !isdigit(*it)) {
 			// We delete all invalid characters here
 			continue;
 		}
@@ -46,7 +46,7 @@ int short_name_find_index(const struct ShortName *sn, struct Array *list) {
 	bool this_index_ok;
 
 	// The condition to avoid endless loop!
-	for (tmp.index = 0; tmp.index < list->position; tmp.index++) {
+	for (tmp.index = 1; tmp.index <= list->position; tmp.index++) {
 		short_name_to_string(&tmp, tmp_short_name);
 		this_index_ok = true;
 		for (int i = 0; i < list->position; i++) {
@@ -76,4 +76,30 @@ void short_name_to_string(const struct ShortName *sn, char *out) {
 
 		concat_short_name(out, base_name, sn->extname);
 	}
+}
+
+bool is_already_shortname(const char *filename) {
+	size_t len = strlen(filename);
+	const char *dot = strchr(filename, '.');
+	size_t base_len = dot ? (size_t)(dot - filename) : len;
+	size_t ext_len = dot ? strlen(dot + 1) : 0;
+
+	// Check the length: 1-8.0-3
+	if (base_len == 0 || base_len > 8 || ext_len > 3) {
+		return false;
+	}
+
+	// Check base name: 1-8 uppercase letters or digits, no spaces
+	for (size_t i = 0; i < base_len; i++) {
+		if (!isalnum(filename[i]) || !isupper(filename[i]))
+			return false;
+	}
+
+	// Check extension: 0-3 uppercase letters or digits, no spaces
+	for (size_t i = 0; i < ext_len; i++) {
+		if (!isalnum(dot[1 + i]) || !isupper(dot[1 + i]))
+			return false;
+	}
+
+	return true;
 }

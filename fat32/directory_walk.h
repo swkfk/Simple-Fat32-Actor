@@ -21,5 +21,7 @@ void dump_long_name(struct Array *dirs, char *longname);
 
 int search_path(struct Fat32_Image *img, const char **pathes, int count, DirectoryEntries *out_dirs,
 		fat_entry_t *out_start_cluster);
+int alloc_directory_entries(struct Fat32_Image *img, fat_entry_t start_cluster, size_t count,
+			    DirectoryEntries entries);
 
 #endif

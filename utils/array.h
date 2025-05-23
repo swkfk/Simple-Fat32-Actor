@@ -13,6 +13,7 @@ struct Array {
 struct Array *alloc_array(size_t elem_size, size_t init_capacity);
 void *array_get_elem(struct Array *array, int pos);
 void array_append_elem(struct Array *array, void *data);
+void array_drop_all(struct Array *array);
 void array_free(struct Array **p);
 
 #endif
