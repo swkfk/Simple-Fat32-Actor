@@ -1,7 +1,7 @@
-TARGET := fat32-actor
+TARGET := fat32-action-tuner
 
-CFLAGS  := -Wall -Werror
-LDFLAGS :=
+CFLAGS  += -Wall -Werror
+LDFLAGS +=
 
 OBJS := main.o								\
 	dispatch.o							\
