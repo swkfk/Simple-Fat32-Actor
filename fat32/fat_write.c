@@ -32,6 +32,12 @@ void release_cluster_chain(fat_entry_t start_cluster) {
 }
 
 void truncate_cluster_chain(fat_entry_t start_cluster, size_t remained_count) {
+	if (remained_count == 0) {
+		Ltrace("Release all clusters from %x", start_cluster);
+		release_cluster_chain(start_cluster);
+		return;
+	}
+
 	// Assert remained_count > 0!
 	fat_entry_t last_cluster, current_cluster;
 

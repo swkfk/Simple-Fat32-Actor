@@ -126,7 +126,26 @@ DEFINE_JOB(truncate) {
 		truncate_cluster_chain(start_cluster, new_cluster_count);
 	} else {
 		// Allocate some clusters
-		allocate_cluster_chain(start_cluster, new_cluster_count - old_cluster_count);
+		size_t needed_cluster = new_cluster_count - old_cluster_count;
+		if (old_size == 0) {
+			Ltrace("No origin clusters found, allocate a cluster first!");
+			fat_entry_t allocated = 0;
+			ret = allocate_orphan_cluster(&allocated);
+			if (ret) {
+				goto entry_wb;
+			}
+
+			Ltrace("Modify the file's start cluster to %x", allocated);
+			entry->StartCluster_hi = (allocated >> 16) & 0xFFFF;
+			entry->StartCluster_lo = (allocated) & 0xFFFF;
+			write_file_directory_entry(img.fp, array_get_elem(dirs, -1));
+
+			start_cluster = allocated;
+			needed_cluster--;
+		}
+		if (needed_cluster) {
+			allocate_cluster_chain(start_cluster, needed_cluster);
+		}
 	}
 
 	if (new_size == 0) {
@@ -134,9 +153,7 @@ DEFINE_JOB(truncate) {
 		// Clear the start cluster!
 		entry->StartCluster_hi = 0;
 		entry->StartCluster_lo = 0;
-		write_file(img.fp, entry,
-			   ((struct DirectoryEntryWithOffset *)array_get_elem(dirs, -1))->offset,
-			   sizeof(struct Fat32_ShortDirectoryEntry));
+		write_file_directory_entry(img.fp, array_get_elem(dirs, -1));
 	}
 
 	// Write back the fsinfo
