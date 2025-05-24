@@ -219,6 +219,8 @@ out_free_array:
 }
 
 DEFINE_JOB(touch) {
+	acquire_image_loaded();
+
 	if (argc == 1) {
 		return E_InvalidParam;
 	}
@@ -226,6 +228,8 @@ DEFINE_JOB(touch) {
 }
 
 DEFINE_JOB(mkdir) {
+	acquire_image_loaded();
+
 	if (argc == 1) {
 		return E_InvalidParam;
 	}
@@ -233,6 +237,8 @@ DEFINE_JOB(mkdir) {
 }
 
 DEFINE_JOB(mv) {
+	acquire_image_loaded();
+
 	int ret = 0;
 
 	int pos_of_arrow = -1;

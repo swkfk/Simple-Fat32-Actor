@@ -16,6 +16,8 @@
 #define print_bool(k, v) print_kv(k, "%s", (v) ? "\033[32myes\033[0m" : "\033[33mno\033[0m")
 
 DEFINE_JOB(read_data) {
+	acquire_image_loaded();
+
 	if (argc != 2 && argc != 3) {
 		return E_InvalidParam;
 	}
@@ -101,6 +103,8 @@ DefDirWalkCb(display_entry_info) {
 }
 
 DEFINE_JOB(read_directory) {
+	acquire_image_loaded();
+
 	if (argc != 2) {
 		return E_InvalidParam;
 	}

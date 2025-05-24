@@ -64,6 +64,8 @@ DefDirWalkCb(display_entry_info) {
 }
 
 DEFINE_JOB(ls) {
+	acquire_image_loaded();
+
 	fat_entry_t start_cluster = 0;
 	DirectoryEntries dirs = NULL;
 	struct Fat32_ShortDirectoryEntry *entry = NULL;

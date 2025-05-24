@@ -22,6 +22,8 @@ DefDirWalkCb(check_empty_callback) {
 }
 
 DEFINE_JOB(rm) {
+	acquire_image_loaded();
+
 	int ret = 0;
 
 	fat_entry_t start_cluster = 0;
@@ -82,6 +84,8 @@ out:
 }
 
 DEFINE_JOB(truncate) {
+	acquire_image_loaded();
+
 	int ret = 0;
 
 	fat_entry_t start_cluster = 0;
