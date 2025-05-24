@@ -19,7 +19,6 @@ static void parse_args(int argc, char **argv, char **pre_exec, int *pre_exec_cou
 		switch (ch) {
 		case 'v':
 			set_verbose();
-			Ltrace("Enable trace logs ...");
 			break;
 		case 'q':
 			set_quiet();
@@ -63,6 +62,8 @@ static void do_job_from_line(char *input) {
 
 	if (ret != 0) {
 		Lwarn("Jobs exited with %d (%s)", ret, get_error_reason(ret));
+	} else {
+		Linfo("Jobs exited successfully!");
 	}
 }
 

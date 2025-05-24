@@ -62,6 +62,8 @@ static int create_item(bool is_file, const char *filename, char **pathes, int pa
 		return E_ThisIsAFile;
 	}
 
+	Ltrace("Got parent directory cluster: %x", parent_dir_cluster);
+
 	if (out_parent_start_cluster) {
 		*out_parent_start_cluster = parent_dir_cluster;
 	}
@@ -70,6 +72,7 @@ static int create_item(bool is_file, const char *filename, char **pathes, int pa
 	_already_exist = false;
 	_target_filename = filename;
 	walk_directory_on_fat(&img, parent_dir_cluster, collect_all_shortname_cb);
+	Ltrace("Got %zd item(s) in the parent directory", _short_list->position);
 
 	int ret = 0;
 
@@ -82,7 +85,6 @@ static int create_item(bool is_file, const char *filename, char **pathes, int pa
 
 	struct ShortName sn;
 	short_name_basic_spawn(filename, &sn);
-	Dtrace("B: '%s', E: '%s'\n", sn.basename, sn.extname);
 	int index = short_name_find_index(&sn, _short_list);
 	if (index < 0) {
 		Lwarn("Cannot find a correct index in shortname");
@@ -105,10 +107,13 @@ static int create_item(bool is_file, const char *filename, char **pathes, int pa
 	alloc_directory_entries(&img, parent_dir_cluster, directory_needed, new_entries);
 
 	Ltrace("Allocated enteries: %zd", new_entries->position);
+
+	Dverbose("(O): ");
 	for (size_t i = 0; i < new_entries->position; i++) {
 		struct DirectoryEntryWithOffset *o = array_get_elem(new_entries, i);
-		Dtrace("(O): %zx\n", o->offset);
+		Dverbose("%zx ", o->offset);
 	}
+	Dverbose("\n");
 
 	// Write the last entry (The shortname entry)
 	struct DirectoryEntryWithOffset *short_entry_off = array_get_elem(new_entries, -1);
@@ -120,7 +125,6 @@ static int create_item(bool is_file, const char *filename, char **pathes, int pa
 	memcpy(short_entry->BaseName, short_base, strlen(short_base));
 	memcpy(short_entry->ExtName, short_ext, strlen(short_ext));
 
-	Ltrace("Short name filled!");
 	// TODO: Fill the datetime
 
 	if (is_file) {
@@ -133,6 +137,7 @@ static int create_item(bool is_file, const char *filename, char **pathes, int pa
 		if ((ret = allocate_orphan_cluster(&allocated))) {
 			goto out_free_entries;
 		}
+		Ltrace("New directory will start from #%d cluster", allocated);
 		short_entry->StartCluster_hi = (allocated >> 16) & 0xFFFF;
 		short_entry->StartCluster_lo = (allocated) & 0xFFFF;
 
@@ -158,6 +163,7 @@ static int create_item(bool is_file, const char *filename, char **pathes, int pa
 		// Write into the cluster
 		write_file(img.fp, dot, loc_data_bytes_by_cluster(&img, allocated),
 			   2 * sizeof(struct Fat32_ShortDirectoryEntry));
+		Ltrace("'.' & '..' entry written in");
 	}
 
 	// Write the short entry
@@ -165,9 +171,11 @@ static int create_item(bool is_file, const char *filename, char **pathes, int pa
 	if (out_last_entry) {
 		*out_last_entry = *short_entry_off;
 	}
+	Ltrace("The last directory entry was written with offset %zx", short_entry_off->offset);
 
 	// Fill the longname
 	uint8_t checksum = calculate_checksum(short_entry);
+	Ltrace("The longname checksum is 0x%x", checksum);
 
 	// A simple way to avoid out of boundary
 	char longname[MAX_FILENAME_LENGTH + 26] = {};
@@ -194,6 +202,8 @@ static int create_item(bool is_file, const char *filename, char **pathes, int pa
 		// Write the long entry
 		write_file_directory_entry(img.fp, long_entry_off);
 	}
+
+	Ltrace("All longname entries written in");
 
 out_free_entries:
 	// Write back the fsinfo. Even the error occurred, we still keep the allocated clusters for
@@ -253,6 +263,8 @@ DEFINE_JOB(mv) {
 		goto out;
 	}
 
+	Ltrace("Src content start from cluster %x", src_start_cluster);
+
 	if (src_start_cluster == img.header->RootClusterNumber) {
 		ret = E_PermissionDenied;
 		goto out;
@@ -272,6 +284,7 @@ DEFINE_JOB(mv) {
 		o->entry.BaseName[0] = 0xE5;
 		write_file_directory_entry(img.fp, o);
 	}
+	Ltrace("All old entries invalidated temporarily");
 
 	// Create the new entry first AS A FILE!
 	fat_entry_t dest_parent_cluster = 0;
@@ -286,17 +299,22 @@ DEFINE_JOB(mv) {
 			o->entry._Reserved_1 = 0;
 			write_file_directory_entry(img.fp, o);
 		}
+		Ltrace("Recover old entries due to something wrong happend");
 
 		goto out;
 	}
+
+	Ltrace("New item created, parent cluster: %x, last entry offset: %zx", dest_parent_cluster,
+	       dest_last_entry.offset);
 
 	// Modify the new entry
 	dest_last_entry.entry.StartCluster_hi = src_last_entry->StartCluster_hi;
 	dest_last_entry.entry.StartCluster_lo = src_last_entry->StartCluster_lo;
 	dest_last_entry.entry.FileLength = src_last_entry->FileLength;
 	dest_last_entry.entry.Attribute = src_last_entry->Attribute;
-	write_file_directory_entry(img.fp, &dest_last_entry);
 	// TODO: Fill the datetime
+	write_file_directory_entry(img.fp, &dest_last_entry);
+	Ltrace("Newly created directory entry modified");
 
 	// If is directory, modify the parent directory cluster
 	if (DIR_ENTRY_IS_DIR(src_last_entry)) {
@@ -304,13 +322,13 @@ DEFINE_JOB(mv) {
 		size_t offset = loc_data_bytes_by_cluster(&img, src_start_cluster) +
 				sizeof(struct Fat32_ShortDirectoryEntry);
 		read_file(img.fp, &dotdot, offset, sizeof(struct Fat32_ShortDirectoryEntry));
-		if (dest_parent_cluster != img.header->RootClusterNumber) {
-			dotdot.StartCluster_hi = (dest_parent_cluster >> 16) & 0xFFFF;
-			dotdot.StartCluster_lo = (dest_parent_cluster) & 0xFFFF;
-		} else {
-			dotdot.StartCluster_hi = dotdot.StartCluster_lo = 0;
+		if (dest_parent_cluster == img.header->RootClusterNumber) {
+			dest_parent_cluster = 0;
 		}
+		dotdot.StartCluster_hi = (dest_parent_cluster >> 16) & 0xFFFF;
+		dotdot.StartCluster_lo = (dest_parent_cluster) & 0xFFFF;
 		write_file(img.fp, &dotdot, offset, sizeof(struct Fat32_ShortDirectoryEntry));
+		Ltrace("'..' cluster modified into %x", dest_parent_cluster);
 	}
 
 out:

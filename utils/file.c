@@ -14,7 +14,7 @@ int read_file(FILE *fp, void *out, size_t start, size_t len) {
 
 	size_t read = fread(out, 1, len, fp);
 
-	Ltrace("Read 0x%04zx bytes start @%08zx, length of 0x%04zx expected", read, start, len);
+	Lverbose("Read 0x%04zx bytes start @%08zx, length of 0x%04zx expected", read, start, len);
 
 	if (read != len) {
 		if (feof(fp)) {
@@ -39,7 +39,8 @@ int write_file(FILE *fp, void *data, size_t start, size_t len) {
 	size_t written = fwrite(data, 1, len, fp);
 	fflush(fp);
 
-	Ltrace("Wrote 0x%04zx bytes start @%08zx, length of 0x%04zx expected", written, start, len);
+	Lverbose("Wrote 0x%04zx bytes start @%08zx, length of 0x%04zx expected", written, start,
+		 len);
 
 	if (written != len) {
 		return -1; // Write error

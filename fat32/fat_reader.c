@@ -26,8 +26,8 @@ static int fat_ensure_present(fat_entry_t cluster) {
 
 	int position = loc_fat_entry_bytes(&img, begin_cluster);
 
-	Ltrace("Read the fat content for the %u-th cluster, offsets: 0x%x", begin_cluster,
-	       position);
+	Lverbose("Read the fat content for the %u-th cluster, offsets: 0x%x", begin_cluster,
+		 position);
 
 	int r = read_file(img.fp, &_fat.cached_fat_entry, position,
 			  sizeof(fat_entry_t) * CACHE_FAT_NUMBER);

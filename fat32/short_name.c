@@ -49,7 +49,7 @@ int short_name_find_index(const struct ShortName *sn, struct Array *list) {
 	// The condition to avoid endless loop!
 	for (tmp.index = 0; tmp.index <= list->position; tmp.index++) {
 		short_name_to_string(&tmp, tmp_short_name, NULL, NULL);
-		Dtrace("Try shortname: '%s'\n", tmp_short_name);
+		Dverbose("Try shortname: '%s'\n", tmp_short_name);
 		this_index_ok = true;
 		for (int i = 0; i < list->position; i++) {
 			if (!strcmp(tmp_short_name, array_get_elem(list, i))) {

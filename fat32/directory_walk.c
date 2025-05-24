@@ -109,8 +109,9 @@ DefDirWalkCb(search_directory_callback) {
 	dump_long_name(dirs, longname);
 	dump_last_dir(dirs, &dir);
 
-	Ltrace("Search Directory: _now_target_name: '%s', short_name: '%s', '%s', long_name: '%s'",
-	       _now_target_name, short_basename, short_extname, longname);
+	Lverbose(
+	    "Search Directory: _now_target_name: '%s', short_name: '%s', '%s', long_name: '%s'",
+	    _now_target_name, short_basename, short_extname, longname);
 	if (longname[0] != '\0') {
 		// Just compare the long name
 		if (!strcmp(longname, _now_target_name)) {
@@ -125,8 +126,8 @@ DefDirWalkCb(search_directory_callback) {
 		// Build the short name, and compare it!
 		char short_name[13];
 		concat_short_name(short_name, short_basename, short_extname);
-		Ltrace("Concated string: '%s' + '%s' ==> '%s'", short_basename, short_extname,
-		       short_name);
+		Lverbose("Concated string: '%s' + '%s' ==> '%s'", short_basename, short_extname,
+			 short_name);
 		if (!strcmp(short_name, _now_target_name)) {
 			goto found;
 		} else {
@@ -136,8 +137,7 @@ DefDirWalkCb(search_directory_callback) {
 
 found:
 	_now_searched_entries = dirs;
-	Ltrace("Set _now_searched_cluster = %d",
-	       JOIN_NUMBER(32, dir->StartCluster_hi, dir->StartCluster_lo));
+	Ltrace("Find cluster: %d", JOIN_NUMBER(32, dir->StartCluster_hi, dir->StartCluster_lo));
 	return true;
 
 not_found:

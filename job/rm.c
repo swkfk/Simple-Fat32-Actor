@@ -58,12 +58,18 @@ DEFINE_JOB(rm) {
 		uint8_t data = 0xE5;
 		write_file(img.fp, &data, e->offset, 1);
 	}
+	Ltrace("All directory entries were invalidated");
+
 	// 2. Release the clusters
 	release_cluster_chain(start_cluster);
+	Ltrace("Clusters used were released");
+
 	// 3. Change the free cluster
 	if (start_cluster && start_cluster < img.fsinfo->NextEmptyClusterNumber) {
 		img.fsinfo->NextEmptyClusterNumber = start_cluster;
+		Ltrace("Modify the 'NextEmptyClusterNumber' as %x", start_cluster);
 	}
+
 	// Write back the fsinfo
 	write_file(img.fp, img.fsinfo, img.header->FSINFO_SectorNumber * img.header->BytesPerSector,
 		   sizeof(struct Fat32_FsInfo));
@@ -109,9 +115,11 @@ DEFINE_JOB(truncate) {
 	       new_cluster_count);
 
 	if (old_size == new_size) {
+		Ltrace("File size no changed");
 		goto out;
 	}
 	if (old_cluster_count == new_cluster_count) {
+		Ltrace("Cluster count no changed, just modify the size");
 		goto entry_wb;
 	} else if (old_cluster_count > new_cluster_count) {
 		// Release some clusters
@@ -122,6 +130,7 @@ DEFINE_JOB(truncate) {
 	}
 
 	if (new_size == 0) {
+		Ltrace("Clear the start cluster in the file's directory entry");
 		// Clear the start cluster!
 		entry->StartCluster_hi = 0;
 		entry->StartCluster_lo = 0;

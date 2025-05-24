@@ -11,7 +11,7 @@ static void write_cluster_in_fat(fat_entry_t cluster, fat_entry_t data) {
 }
 
 static void free_cluster(fat_entry_t cluster) {
-	Ltrace("Free cluster: %x", cluster);
+	Lverbose("Free cluster: %x", cluster);
 	write_cluster_in_fat(cluster, 0);
 }
 
@@ -42,7 +42,9 @@ void truncate_cluster_chain(fat_entry_t start_cluster, size_t remained_count) {
 		}
 		last_cluster = cluster;
 	}
+	Ltrace("Release cluster chain from %x", current_cluster);
 	release_cluster_chain(current_cluster);
+	Ltrace("The terminated cluster is %x now", last_cluster);
 	terminate_cluster(last_cluster);
 }
 
@@ -56,13 +58,16 @@ int allocate_cluster_chain(fat_entry_t start_cluster, size_t addition_count) {
 		last_cluster = cluster;
 	}
 
+	Ltrace("Allocate %zd clusters from origin terminated cluster %x", addition_count,
+	       last_cluster);
+
 	for (size_t i = 0; i < addition_count; i++) {
 
 		fat_entry_t allocated = find_free_cluster();
 		if (allocated == 0) {
 			return E_NoSpace;
 		}
-		Ltrace("Allocate cluster: %x", allocated);
+		Lverbose("Allocate cluster: %x", allocated);
 
 		img.fsinfo->NextEmptyClusterNumber = allocated;
 		img.fsinfo->EmptyClusterCount--;
@@ -74,6 +79,8 @@ int allocate_cluster_chain(fat_entry_t start_cluster, size_t addition_count) {
 		invalidate_fat();
 	}
 
+	Ltrace("The terminated cluster is %x now", last_cluster);
+
 	invalidate_fat();
 	return 0;
 }
@@ -83,7 +90,7 @@ int allocate_orphan_cluster(fat_entry_t *out) {
 	if (allocated == 0) {
 		return E_NoSpace;
 	}
-	Ltrace("Allocate cluster: %x", allocated);
+	Lverbose("Allocate cluster: %x", allocated);
 
 	img.fsinfo->NextEmptyClusterNumber = allocated;
 	img.fsinfo->EmptyClusterCount--;
