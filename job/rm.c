@@ -144,7 +144,15 @@ DEFINE_JOB(truncate) {
 			needed_cluster--;
 		}
 		if (needed_cluster) {
-			allocate_cluster_chain(start_cluster, needed_cluster);
+			ret = allocate_cluster_chain(start_cluster, needed_cluster);
+			if (ret) {
+				Ltrace("Recover the file directory entry due to something wrong "
+				       "happened");
+				entry->StartCluster_hi = 0;
+				entry->StartCluster_lo = 0;
+				write_file_directory_entry(img.fp, array_get_elem(dirs, -1));
+				goto out;
+			}
 		}
 	}
 

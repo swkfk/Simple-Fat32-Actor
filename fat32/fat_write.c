@@ -39,7 +39,7 @@ void truncate_cluster_chain(fat_entry_t start_cluster, size_t remained_count) {
 	}
 
 	// Assert remained_count > 0!
-	fat_entry_t last_cluster, current_cluster;
+	fat_entry_t last_cluster = 0, current_cluster = 0;
 
 	FOR_FAT_ENTRY_CHAIN (cluster, start_cluster) {
 		current_cluster = cluster;
@@ -59,7 +59,7 @@ int allocate_cluster_chain(fat_entry_t start_cluster, size_t addition_count) {
 		return E_NoSpace;
 	}
 
-	fat_entry_t last_cluster;
+	fat_entry_t last_cluster = 0;
 	FOR_FAT_ENTRY_CHAIN (cluster, start_cluster) {
 		last_cluster = cluster;
 	}

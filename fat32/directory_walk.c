@@ -205,7 +205,7 @@ int alloc_directory_entries(struct Fat32_Image *img, fat_entry_t start_cluster, 
 	void *cluster_data =
 	    checked_malloc(img->header->BytesPerSector, img->header->SectorsPerCluster);
 
-	fat_entry_t last_cluster;
+	fat_entry_t last_cluster = 0;
 
 	FOR_FAT_ENTRY_CHAIN (cluster, start_cluster) {
 		read_cluster_content(cluster, cluster_data);
@@ -257,10 +257,11 @@ alloc_over:
 }
 
 uint8_t calculate_checksum(struct Fat32_ShortDirectoryEntry *sdir) {
-	uint8_t i, j, chksum = 0;
+	uint8_t i, j = 0, chksum = 0;
 	for (i = 11; i > 0; i--) {
-		// BaseName index out of boundary allowed
-		chksum = ((chksum & 1) ? 0x80 : 0) + (chksum >> 1) + sdir->BaseName[j++];
+		chksum = ((chksum & 1) ? 0x80 : 0) + (chksum >> 1) +
+			 (j < 8 ? sdir->BaseName[j] : sdir->ExtName[j - 8]);
+		j++;
 	}
 	return chksum;
 }

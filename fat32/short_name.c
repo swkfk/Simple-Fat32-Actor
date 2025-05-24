@@ -77,7 +77,7 @@ void short_name_to_string(const struct ShortName *sn, char *out, char *out_basen
 		}
 	} else {
 		int number_length;
-		char number[9], base_name[9];
+		char number[13], base_name[9];
 		sprintf(number, "~%d%n", sn->index, &number_length);
 
 		strcpy(base_name, sn->basename);
